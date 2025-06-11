@@ -22,7 +22,7 @@ rule mu_hpge_coinc:
     params:
         lvl1="{lvl1}",
         lvl2="{lvl2}",
-        base="{base}"
+        base="{base}".replace("tier_mgc","tier_pht")
     run:
         import os
         # Ensure output directory exists
