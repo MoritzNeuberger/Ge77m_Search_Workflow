@@ -6,8 +6,6 @@ rule delayed_coinc:
     tier_dc.lh5 in gen/delayed_coinc/...
     """
 
-    conda:
-        "../envs/delayed_coinc.yaml"
 
     input:
         # depends on mu_hpge_coinc output

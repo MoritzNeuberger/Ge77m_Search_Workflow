@@ -5,8 +5,6 @@ rule make_skm:
     Collect all delayed_coinc .lh5 files under a specific lvl2 folder and merge into a single output file.
     Output: gen/make_skm/{lvl1}/{lvl2}.lh5
     """
-    conda:
-        "../envs/make_skm.yaml"
     input:
         lambda wc: sorted(
             glob.glob(

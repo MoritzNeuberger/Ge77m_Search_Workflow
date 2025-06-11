@@ -6,10 +6,6 @@ rule mu_hpge_coinc:
     tier_mgc.lh5 in gen/mu_hpge_coinc/...
     """
 
-    # declare Conda environment for reproducibility
-    conda:
-        "../envs/mu_hpge_coinc.yaml"
-
     # input is the previous-layer file
     input:
         # e.g. /…/phy/p03/r000/l200-p03-r000-phy-…-tier_pht.lh5
