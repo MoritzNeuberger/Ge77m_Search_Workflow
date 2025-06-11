@@ -14,9 +14,11 @@ rule delayed_coinc:
         os.path.join(
             config["out_root"],
             "mu_hpge_coinc",
-            "{lvl1}",
-            "{lvl2}",
-            "{base}".replace("tier_dc", "tier_mgc") + ".lh5"
+            "/{lvl1}/{lvl2}/{base}.lh5".format(
+                lvl1=wc["lvl1"],
+                lvl2=wc["lvl2"],
+                base=wc["base"].replace("tier_dc", "tier_mgc")
+            )
         )
     output:
         # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_dc.lh5
