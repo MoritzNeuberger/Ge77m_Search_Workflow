@@ -8,7 +8,8 @@ setup(
     install_requires=[
         "numpy",
         "awkward",
-        "pandas"
+        "pandas",
+        "snakemake"
         # (empty, since we list deps in your envs/*.yaml)
     ],
 )
