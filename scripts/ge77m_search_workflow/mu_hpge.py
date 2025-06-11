@@ -24,7 +24,7 @@ def generate_paths_of_different_tiers(input_path, fallback_defult="ref-v2.0.0"):
         paths['tcm'] = input_path.replace("pht", "tcm").replace("ref-v2.1.0", fallback_defult)
     return paths
 
-columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","is_in_coincidence_with_mu","is_saturated"]
+columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","tp_01_hpge","tp_max_muon","is_in_coincidence_with_mu","is_saturated"]
 acc_range = [-2000, 5000]
 
 
@@ -96,7 +96,6 @@ def process_mu_hpge_coinc(input, output):
             output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
             output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
 
-    print(output_data["tp_01_hpge"])
     output_data["hit_table"] = types.Array(output_data["hit_table"])
     output_data["hit_idx"] = types.Array(output_data["hit_idx"])
     output_data["evt_idx"] = types.Array(output_data["evt_idx"])
