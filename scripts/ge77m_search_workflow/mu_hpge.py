@@ -5,7 +5,12 @@ import lgdo.types as types
 import awkward as ak
 import utils as ut
 
-def generate_paths_of_different_tiers(input_path, fallback_defult="ref-v2.0.0"):
+
+columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","tp_01_hpge","tp_max_muon","is_in_coincidence_with_mu","is_saturated"]
+acc_range = [-2000, 5000]
+min_cuspEmax = 25
+
+def generate_paths_of_different_tiers_from_pht(input_path, fallback_defult="ref-v2.0.0"):
     """
     Generate paths for different tiers based on the input path.
     Args:
@@ -24,9 +29,6 @@ def generate_paths_of_different_tiers(input_path, fallback_defult="ref-v2.0.0"):
         paths['tcm'] = input_path.replace("pht", "tcm").replace("ref-v2.1.0", fallback_defult)
     return paths
 
-columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","tp_01_hpge","tp_max_muon","is_in_coincidence_with_mu","is_saturated"]
-acc_range = [-2000, 5000]
-
 
 def process_mu_hpge_coinc(input, output):
     """
@@ -41,7 +43,7 @@ def process_mu_hpge_coinc(input, output):
     
     """
 
-    paths = generate_paths_of_different_tiers(input)
+    paths = generate_paths_of_different_tiers_from_pht(input)
     
     store = LH5Store()
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
@@ -62,28 +64,29 @@ def process_mu_hpge_coinc(input, output):
         output_data[col] = []
         
     for i in range(len(selected_idx)):
+
         hpge_idx = selected_idx[i]
-        
         if not tcm_id[hpge_idx] in data_streams_hpge:
             continue
         
-        muon_idx = np.where([(tcm_idx == tcm_idx[hpge_idx]) & (tcm_id == chmap.map("name")["MUON01"].daq.rawid)])[1][0]
-            
         data_pht_hpge = store.read("ch{}/hit/".format(tcm_id[hpge_idx]),
                     paths["pht"],
                     idx=[tcm_idx[hpge_idx]])[0].view_as("ak")
 
-        data_psp_hpge = store.read("ch{}/dsp/".format(tcm_id[hpge_idx]),
-                    paths["psp"],
-                    idx=[tcm_idx[hpge_idx]])[0].view_as("ak")
+        if data_pht_hpge["cuspEmax_ctc_cal"] > min_cuspEmax:
+            muon_idx = np.where([(tcm_idx == tcm_idx[hpge_idx]) & (tcm_id == chmap.map("name")["MUON01"].daq.rawid)])[1][0]
 
-        data_psp_muon = store.read("ch{}/dsp/".format(tcm_id[muon_idx]),
-                    paths["psp"],
-                    idx=[tcm_idx[muon_idx]])[0].view_as("ak")
+            data_psp_hpge = store.read("ch{}/dsp/".format(tcm_id[hpge_idx]),
+                        paths["psp"],
+                        idx=[tcm_idx[hpge_idx]])[0].view_as("ak")
 
-        if data_pht_hpge["cuspEmax_ctc_cal"] > 25:
+            data_psp_muon = store.read("ch{}/dsp/".format(tcm_id[muon_idx]),
+                        paths["psp"],
+                        idx=[tcm_idx[muon_idx]])[0].view_as("ak")
+
             evt_idx = tcm_idx[hpge_idx]
             evt_id = np.where(pet_data_geds[evt_idx]["hit_idx"] == hpge_idx)[0][0]
+
             output_data["hit_table"].append(tcm_id[hpge_idx])
             output_data["hit_idx"].append(hpge_idx)
             output_data["evt_idx"].append(tcm_idx[hpge_idx])
@@ -96,20 +99,8 @@ def process_mu_hpge_coinc(input, output):
             output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
             output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
 
-    output_data["hit_table"] = types.Array(output_data["hit_table"])
-    output_data["hit_idx"] = types.Array(output_data["hit_idx"])
-    output_data["evt_idx"] = types.Array(output_data["evt_idx"])
-    output_data["timestamp"] = types.Array(output_data["timestamp"])
-    output_data["cuspEmax_ctc_cal"] = types.Array(output_data["cuspEmax_ctc_cal"])
-    output_data["is_good_hit"] = types.Array(output_data["is_good_hit"])
-    output_data["mu_diff"] = types.Array(output_data["mu_diff"])
-    output_data["tp_01_hpge"] = types.Array(output_data["tp_01_hpge"])
-    output_data["tp_max_muon"] = types.Array(output_data["tp_max_muon"])
-    output_data["is_in_coincidence_with_mu"] = types.Array(output_data["is_in_coincidence_with_mu"])
-    output_data["is_saturated"] = types.Array(output_data["is_saturated"])
-
-    # write to lh5 file
-    output_lh5 = types.Table(col_dict=output_data)
+    output_data_lgdo = {col: types.Array(output_data[col]) for col in columns}
+    output_lh5 = types.Table(col_dict=output_data_lgdo)
     write(output_lh5, name="mgc", lh5_file=output)
 
 
