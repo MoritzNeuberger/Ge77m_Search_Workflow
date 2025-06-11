@@ -10,7 +10,7 @@ rule delayed_coinc:
         base=".*tier_dc.*"
 
     input:
-        lambda wc: config["out_root"] + "mu_hpge_coinc" + "/{lvl1}/{lvl2}/{base}.lh5".format(
+        lambda wc: config["out_root"] + "/mu_hpge_coinc/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
             base=wc["base"].replace("tier_dc", "tier_mgc")
