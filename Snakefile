@@ -60,6 +60,8 @@ for d in initial:
             f"{d['lvl1']}-{d['lvl2']}.lh5"
         )
     )
+print(f"Initial inputs: {len(initial)}")
+print(f"All outputs: {len(all_outputs)}")
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:
