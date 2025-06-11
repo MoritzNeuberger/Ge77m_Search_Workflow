@@ -10,3 +10,4 @@ out_root: gen
 workflow:
   - mu_hpge_coinc
   - delayed_coinc
+  - make_skm
