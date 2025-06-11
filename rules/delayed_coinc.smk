@@ -28,5 +28,8 @@ rule delayed_coinc:
             "{base}".replace("tier_pht", "tier_dc") + ".lh5"
         )
     run:
+        import os
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         from ge77m_search_workflow.dc import process_delayed_coinc
         process_delayed_coinc(input[0], output[0])

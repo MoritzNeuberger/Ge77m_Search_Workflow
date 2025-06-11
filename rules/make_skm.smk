@@ -29,8 +29,10 @@ rule make_skm:
     params:
         lvl1="{lvl1}",
         lvl2="{lvl2}"
-    threads: 1
     run:
+        import os
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         # Import and call your merge function here
         from ge77m_search_workflow.make_skm import merge_lh5_files
         merge_lh5_files(list(input), output[0])

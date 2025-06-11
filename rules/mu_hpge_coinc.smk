@@ -27,8 +27,9 @@ rule mu_hpge_coinc:
         lvl1="{lvl1}",
         lvl2="{lvl2}",
         base="{base}"
-    threads: 1
     run:
-        # you would import and call your function here
+        import os
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         from ge77m_search_workflow.mu_hpge import process_mu_hpge_coinc
         process_mu_hpge_coinc(input[0], output[0])
