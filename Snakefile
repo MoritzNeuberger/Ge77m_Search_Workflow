@@ -51,6 +51,7 @@ for d in initial:
             d["base"].replace("tier_pht", "tier_dc") + ".lh5"
         )
     )
+all_inputs = sorted(set(all_inputs))  # Remove duplicates and sort
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:
