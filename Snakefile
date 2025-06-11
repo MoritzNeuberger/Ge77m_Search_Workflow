@@ -38,7 +38,7 @@ for d in initial:
             config["workflow"][0],
             d["lvl1"],
             d["lvl2"],
-            d["base"] + ".lh5" #.replace("tier_pht", "tier_mgc")
+            d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
         )
     )
     # delayed_coinc output
@@ -48,7 +48,7 @@ for d in initial:
             config["workflow"][1],
             d["lvl1"],
             d["lvl2"],
-            d["base"].replace("tier_pht", "tier_mgc") + ".lh5" #.replace("tier_pht", "tier_dc")
+            d["base"].replace("tier_pht", "tier_dc") + ".lh5"
         )
     )
     # make_skm output
