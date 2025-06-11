@@ -6,6 +6,9 @@ setup(
     packages=find_packages(where="scripts"),
     package_dir={"": "scripts"},
     install_requires=[
+        "numpy",
+        "awkward",
+        "pandas"
         # (empty, since we list deps in your envs/*.yaml)
     ],
 )
