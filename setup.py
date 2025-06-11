@@ -9,7 +9,7 @@ setup(
         "numpy",
         "awkward",
         "pandas",
-        "snakemake"
+        "snakemake",
         "pygama",
         "lgdo",
         "legendmeta"
