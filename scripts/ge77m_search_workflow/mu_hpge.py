@@ -91,7 +91,7 @@ def process_mu_hpge_coinc(input, output):
             output_data["cuspEmax_ctc_cal"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
             output_data["is_good_hit"].append(pet_data_geds[evt_idx]["is_good_hit"][evt_id])
             output_data["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_max"])[0])
-            output_data["tp_01_hpge"].append(data_psp_hpge["tp_01"][0])
+            output_data["tp_01_hpge"].append(data_psp_hpge["tp_01"])
             output_data["tp_max_muon"].append(data_psp_muon["tp_max"][0])
             output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
             output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
