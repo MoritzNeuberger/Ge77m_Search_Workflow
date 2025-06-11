@@ -57,7 +57,6 @@ rule all:
                 config["out_root"],
                 "make_skm",
                 "{lvl1}",
-                ["{lvl2}" for lvl2 in initial],
                 "{lvl1}-{lvl2}.lh5"
             ),
             lvl1=[x[0] for x in lvl1_lvl2_pairs],
