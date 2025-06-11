@@ -10,11 +10,16 @@ rule delayed_coinc:
         base=".*tier_dc.*"
 
     input:
-        lambda wc: config["out_root"] + "/mu_hpge_coinc/{lvl1}/{lvl2}/{base}.lh5".format(
+        mgc_files=(lambda wc: config["out_root"] + "/mu_hpge_coinc/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
             base=wc["base"].replace("tier_dc", "tier_mgc")
-        )
+        )),
+        pht_files=(lambda wc: config["input_root"] + "/{lvl1}/{lvl2}/{base}.lh5".format(
+            lvl1=wc["lvl1"],
+            lvl2=wc["lvl2"],
+            base=wc["base"].replace("tier_dc", "tier_pht")
+        ))
     output:
         # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_dc.lh5
         os.path.join(

@@ -10,6 +10,9 @@ setup(
         "awkward",
         "pandas",
         "snakemake"
+        "pygama",
+        "lgdo",
+        "legendmeta"
         # (empty, since we list deps in your envs/*.yaml)
     ],
 )
