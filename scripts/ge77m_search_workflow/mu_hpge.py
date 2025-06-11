@@ -1,17 +1,16 @@
 import os
-import argparse
-import numba as nb
-import numpy as np
-import pygama
-from packaging.version import Version
-from pygama import logging
-from pygama.flow import DataLoader
-from lgdo.lh5 import LH5Store
-from legendmeta import LegendMetadata
-import pandas as pd
-import json
-import awkward as ak
+#import numpy as np
+#import pygama
+#from packaging.version import Version
+#from pygama import logging
+#from pygama.flow import DataLoader
+#from lgdo.lh5 import LH5Store
+#from legendmeta import LegendMetadata
+#import pandas as pd
+#import json
+#import awkward as ak
 
+"""
 
 def generate_channel_map(ts):
     lmeta = LegendMetadata()
@@ -66,22 +65,6 @@ def is_in_coincidence_with_mu(hpge_data, mu_data, acc_range):
                 output_diff.append(np.nan)
         return output_diff, output_bool
     return nb_func(hpge_data_np,mu_data_np,acc_range)
-
-
-def process_mu_hpge_coinc(input, output):
-    """
-    Process coincidences between muon channel and HPGe channel.
-    Args:
-        input (list): List of input files.
-        output (list): List of output files.
-    """
-
-
-
-
-
-
-
 
 
 def check_folder_path(path):
@@ -195,9 +178,27 @@ output = pd.DataFrame(output)
 # Save the output
 save_output(run_info, output, args["output_folder"])
 
+"""
 
 
-#    print("Processing mu_hpge_coinc...")
-#    print("input:", len(input))
-#    print("output:", len(output))    
-#    os.system(f"touch {output}")
+def process_mu_hpge_coinc(input, output):
+    """
+    Process coincidences between muon channel and HPGe channel.
+    Args:
+        input (list): List of input files.
+        output (list): List of output files.
+    """
+
+
+
+
+
+
+
+
+
+
+    print("Processing mu_hpge_coinc...")
+    print("input:", len(input))
+    print("output:", len(output))    
+    os.system(f"touch {output}")
