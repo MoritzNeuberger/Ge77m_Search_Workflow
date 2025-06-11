@@ -7,7 +7,7 @@ rule delayed_coinc:
     """
 
     wildcard_constraints:
-        base=".*dc.*"
+        base=".*tier_dc.*"
 
     input:
         # depends on mu_hpge_coinc output
