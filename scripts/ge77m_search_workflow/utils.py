@@ -42,11 +42,9 @@ def generate_data_loader(run_info,config_file):
     dl.set_files(file_query)
     return dl
 
-def generate_channel_map(dl):
-    file_list = dl.get_file_list()[["experiment", "period", "run", "timestamp", "datatype"]]
-    first_key = file_list.iloc[0].timestamp
+def generate_channel_map(ts):
     lmeta = LegendMetadata()
-    chmap = lmeta.channelmap(on=first_key)
+    chmap = lmeta.channelmap(on=ts)
     return chmap
 
 def get_HPGe_channels(chmap):
