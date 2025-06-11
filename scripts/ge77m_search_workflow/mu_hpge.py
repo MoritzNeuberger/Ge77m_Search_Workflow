@@ -35,9 +35,14 @@ def generate_paths_of_different_tiers(input_path, fallback_defult="ref-v2.0.0"):
 def process_mu_hpge_coinc(input, output):
     """
     Process coincidences between muon channel and HPGe channel.
+
     Args:
         input (list): List of input files.
         output (list): List of output files.
+
+    This function reads the necessary data from the input files, processes it to find coincidences
+    between muon and HPGe channels, and writes the results to the output files.
+    
     """
 
     paths = generate_paths_of_different_tiers(input)
@@ -110,8 +115,8 @@ if __name__ == "__main__":
     parser.add_argument("input", type=str, help="Input file path.")
     parser.add_argument("output", type=str, help="Output file path.")
     args = parser.parse_args()
-    logging.info("Processing muon HPGe coincidences...")
-    logging.info(f"Input: {args.input}")
-    logging.info(f"Output: {args.output}")
+    print("Processing muon HPGe coincidences...")
+    print(f"Input: {args.input}")
+    print(f"Output: {args.output}")
     process_mu_hpge_coinc(args.input, args.output)
-    logging.info("Processing completed.")
+    print("Processing completed.")

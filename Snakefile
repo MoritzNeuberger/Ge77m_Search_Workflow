@@ -30,9 +30,11 @@ for lvl1 in os.listdir(config["input_root"]):
 # Collect all output files in a single list
 all_inputs = []
 
+mgc_outputs = []
+dc_outputs = []
+
 for d in initial:
-    # mu_hpge_coinc output (not input!)
-    all_inputs.append(
+    mgc_outputs.append(
         os.path.join(
             config["out_root"],
             config["workflow"][0],
@@ -41,8 +43,7 @@ for d in initial:
             d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
         )
     )
-    # delayed_coinc output
-    all_inputs.append(
+    dc_outputs.append(
         os.path.join(
             config["out_root"],
             config["workflow"][1],
@@ -51,9 +52,32 @@ for d in initial:
             d["base"].replace("tier_pht", "tier_dc") + ".lh5"
         )
     )
-all_inputs = sorted(set(all_inputs))  # Remove duplicates and sort
+
+all_inputs = sorted(set(mgc_outputs + dc_outputs))  # Remove duplicates and sort
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:
     input:
         all_inputs
+
+rule mgc_all:
+    input:
+        mgc_outputs
+
+rule dc_all:
+    input:
+        dc_outputs
+    # This ensures dc_all only runs after mgc_all is complete
+    # Use 'run' or 'shell' as appropriate for your workflow
+    # Here, we just use input/output to enforce order
+
+# Make dc_all depend on mgc_all
+use rule mgc_all as mgc_done
+use rule dc_all as dc_done
+ruleorder: mgc_done > dc_done
+
+# Or, if you want to enforce via input:
+rule dc_all:
+    input:
+        mgc_done=mgc_outputs,
+        dc_outputs=dc_outputs
