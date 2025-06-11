@@ -6,6 +6,9 @@ input_root: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref
 # Where to put generated files:
 out_root: gen
 
+# Target file for processing:
+target_file: ""  # Leave empty for all files, or set to a specific filename (without path)
+
 # List of rules in execution order:
 workflow:
   - mu_hpge_coinc
