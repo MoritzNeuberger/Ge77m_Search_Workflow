@@ -9,7 +9,7 @@ rule mu_hpge_coinc:
     # input is the previous-layer file
     input:
         # e.g. /…/phy/p03/r000/l200-p03-r000-phy-…-tier_pht.lh5
-        lambda wc:  config["input_root"] + "/{lvl1}/{lvl2}/"+"{base}".replace("tier_mgc","tier_pht") + ".lh5".format(**wc)
+        lambda wc:  config["input_root"] + "/{lvl1}/{lvl2}/{base}.lh5".format(**wc)
     output:
         # e.g. gen/mu_hpge_coinc/p03/r000/l200-p03-r000-phy-…-tier_mgc.lh5
         os.path.join(
