@@ -6,6 +6,8 @@ rule delayed_coinc:
     tier_dc.lh5 in gen/delayed_coinc/...
     """
 
+    wildcard_constraints:
+        base=".*mgc.*"
 
     input:
         # depends on mu_hpge_coinc output

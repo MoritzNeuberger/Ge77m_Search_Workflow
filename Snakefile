@@ -31,16 +31,26 @@ for lvl1 in os.listdir(config["input_root"]):
 all_inputs = []
 
 for d in initial:
+
+
+    all_inputs.append(
+        os.path.join(
+            config["input_root"],
+            d["lvl1"],
+            d["lvl2"],
+            d["base"] + ".lh5"
+        )
+    )
     # mu_hpge_coinc output (not input!)
-    #all_inputs.append(
-    #    os.path.join(
-    #        config["out_root"],
-    #        config["workflow"][0],
-    #        d["lvl1"],
-    #        d["lvl2"],
-    #        d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
-    #    )
-    #)
+    all_inputs.append(
+        os.path.join(
+            config["out_root"],
+            config["workflow"][0],
+            d["lvl1"],
+            d["lvl2"],
+            d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
+        )
+    )
     # delayed_coinc output
     all_inputs.append(
         os.path.join(

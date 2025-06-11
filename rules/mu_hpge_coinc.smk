@@ -6,6 +6,9 @@ rule mu_hpge_coinc:
     tier_mgc.lh5 in gen/mu_hpge_coinc/...
     """
 
+    wildcard_constraints:
+        base=".*pht.*"
+        
     # input is the previous-layer file
     input:
         lambda wc: config["input_root"] + "/{lvl1}/{lvl2}/{base}.lh5".format(
