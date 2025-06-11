@@ -16,13 +16,16 @@ def generate_paths_of_different_tiers(input_path, fallback_defult="ref-v2.0.0"):
     paths = {}
     paths['pht'] = input_path
     paths['pet'] = input_path.replace("pht", "pet")
-    paths["dsp"] = input_path.replace("pht", "dsp")
-    if not os.path.exists(paths['dsp']):
-        paths['dsp'] = input_path.replace("pht", "dsp").replace("ref-v2.1.0", fallback_defult)
+    paths["psp"] = input_path.replace("pht", "psp")
+    if not os.path.exists(paths['psp']):
+        paths['psp'] = input_path.replace("pht", "psp").replace("ref-v2.1.0", fallback_defult)
     paths['tcm'] = input_path.replace("pht", "tcm")
     if not os.path.exists(paths['tcm']):
         paths['tcm'] = input_path.replace("pht", "tcm").replace("ref-v2.1.0", fallback_defult)
     return paths
+
+columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","is_in_coincidence_with_mu","is_saturated"]
+acc_range = [-2000, 5000]
 
 
 def process_mu_hpge_coinc(input, output):
@@ -40,24 +43,18 @@ def process_mu_hpge_coinc(input, output):
 
     paths = generate_paths_of_different_tiers(input)
     
-    # Get tcm file
     store = LH5Store()
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
     pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
-
+    
+    tcm_id = store.read("/hardware_tcm_1/array_id", paths["tcm"])[0].view_as("np")
+    tcm_idx = store.read("/hardware_tcm_1/array_idx", paths["tcm"])[0].view_as("np")
+    
     timestamp = ut.extract_timestamp_raw(paths["pet"])
     chmap = ut.generate_channel_map(timestamp)
     data_streams_hpge = ut.select_datastreams(chmap, "HPGE")
 
     mask_muon_coinc = pet_data_coinc["muon_offline"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
-
-    tcm_id = store.read("/hardware_tcm_1/array_id", paths["tcm"])[0].view_as("np")
-    tcm_idx = store.read("/hardware_tcm_1/array_idx", paths["tcm"])[0].view_as("np")
-
-    # Load dsp and hit data
-    columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","is_in_coincidence_with_mu","is_saturated"]
-    acc_range = [-2000, 5000]
-
     selected_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask_muon_coinc]))
 
     output_data = {}
@@ -75,13 +72,13 @@ def process_mu_hpge_coinc(input, output):
         data_pht_hpge = store.read("ch{}/hit/".format(tcm_id[hpge_idx]),
                     paths["pht"],
                     idx=[tcm_idx[hpge_idx]])[0].view_as("ak")
-        
-        data_dsp_hpge = store.read("ch{}/dsp/".format(tcm_id[hpge_idx]),
-                    paths["dsp"],
+
+        data_psp_hpge = store.read("ch{}/dsp/".format(tcm_id[hpge_idx]),
+                    paths["psp"],
                     idx=[tcm_idx[hpge_idx]])[0].view_as("ak")
 
-        data_dsp_muon = store.read("ch{}/dsp/".format(tcm_id[muon_idx]),
-                    paths["dsp"],
+        data_psp_muon = store.read("ch{}/dsp/".format(tcm_id[muon_idx]),
+                    paths["psp"],
                     idx=[tcm_idx[muon_idx]])[0].view_as("ak")
 
         if data_pht_hpge["cuspEmax_ctc_cal"] > 25:
@@ -93,7 +90,9 @@ def process_mu_hpge_coinc(input, output):
             output_data["timestamp"].append(data_pht_hpge["timestamp"][0])
             output_data["cuspEmax_ctc_cal"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
             output_data["is_good_hit"].append(pet_data_geds[evt_idx]["is_good_hit"][evt_id])
-            output_data["mu_diff"].append((data_dsp_hpge["tp_01"] - data_dsp_muon["tp_max"])[0])
+            output_data["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_max"])[0])
+            output_data["tp_01_hpge"].append(data_psp_hpge["tp_01"][0])
+            output_data["tp_max_muon"].append(data_psp_muon["tp_max"][0])
             output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
             output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
 

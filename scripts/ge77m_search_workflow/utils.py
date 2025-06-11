@@ -47,9 +47,9 @@ def generate_channel_map(ts):
     chmap = lmeta.channelmap(on=ts)
     return chmap
 
-def get_HPGe_channels(chmap):
+def get_HPGe_channels(chmap,usability_condition='on'):
     channels = chmap.map("system", unique=False)["geds"]
-    channels = channels.map("analysis.usability", unique=False)['on']
+    channels = channels.map("analysis.usability", unique=False)[usability_condition]
     return channels
 
 def select_datastreams(chmap,stream):
