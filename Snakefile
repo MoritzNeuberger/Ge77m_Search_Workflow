@@ -31,33 +31,26 @@ for lvl1 in os.listdir(config["input_root"]):
 all_inputs = []
 
 for d in initial:
-    input_file = os.path.join(
-        config["input_root"],
-        d["lvl1"],
-        d["lvl2"],
-        d["base"] + ".lh5"
+    # mu_hpge_coinc output (not input!)
+    all_inputs.append(
+        os.path.join(
+            config["out_root"],
+            config["workflow"][0],
+            d["lvl1"],
+            d["lvl2"],
+            d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
+        )
     )
-    if os.path.exists(input_file):
-        # mu_hpge_coinc output (not input!)
-        all_inputs.append(
-            os.path.join(
-                config["out_root"],
-                config["workflow"][0],
-                d["lvl1"],
-                d["lvl2"],
-                d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
-            )
+    # delayed_coinc output
+    all_inputs.append(
+        os.path.join(
+            config["out_root"],
+            config["workflow"][1],
+            d["lvl1"],
+            d["lvl2"],
+            d["base"].replace("tier_pht", "tier_dc") + ".lh5"
         )
-        # delayed_coinc output
-        all_inputs.append(
-            os.path.join(
-                config["out_root"],
-                config["workflow"][1],
-                d["lvl1"],
-                d["lvl2"],
-                d["base"].replace("tier_pht", "tier_dc") + ".lh5"
-            )
-        )
+    )
 print(f"Initial inputs: {len(initial)}")
 print(f"All inputs: {all_inputs}")
 

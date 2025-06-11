@@ -7,7 +7,7 @@ rule delayed_coinc:
     """
 
     wildcard_constraints:
-        base="*mgc.*"
+        base=".*dc.*"
 
     input:
         # depends on mu_hpge_coinc output
@@ -16,7 +16,7 @@ rule delayed_coinc:
             "mu_hpge_coinc",
             "{lvl1}",
             "{lvl2}",
-            "{base}" + ".lh5"
+            "{base}".replace("tier_dc", "tier_mgc") + ".lh5"
         )
     output:
         # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_dc.lh5
@@ -25,7 +25,7 @@ rule delayed_coinc:
             "delayed_coinc",
             "{lvl1}",
             "{lvl2}",
-            "{base}".replace("tier_mgc", "tier_dc") + ".lh5"
+            "{base}" + ".lh5"
         )
     run:
         import os

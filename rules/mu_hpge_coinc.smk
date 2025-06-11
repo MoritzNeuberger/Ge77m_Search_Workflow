@@ -7,14 +7,14 @@ rule mu_hpge_coinc:
     """
 
     wildcard_constraints:
-        base="*pht.*"
+        base=".*mgc.*"
 
     # input is the previous-layer file
     input:
         lambda wc: config["input_root"] + "/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
-            base=wc["base"]
+            base=wc["base"].replace("tier_mgc", "tier_pht")
         )
     output:
         # e.g. gen/mu_hpge_coinc/p03/r000/l200-p03-r000-phy-…-tier_mgc.lh5
@@ -23,7 +23,7 @@ rule mu_hpge_coinc:
             "mu_hpge_coinc",
             "{lvl1}",
             "{lvl2}",
-            "{base}".replace("tier_pht", "tier_mgc") + ".lh5"
+            "{base}" + ".lh5"
         )
     params:
         lvl1="{lvl1}",
