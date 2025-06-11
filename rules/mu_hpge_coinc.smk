@@ -30,5 +30,5 @@ rule mu_hpge_coinc:
     threads: 1
     run:
         # you would import and call your function here
-        from mypipeline.mu_hpge import process_mu_hpge_coinc
+        from ge77m_search_workflow.mu_hpge import process_mu_hpge_coinc
         process_mu_hpge_coinc(input[0], output[0])

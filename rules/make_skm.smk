@@ -32,5 +32,5 @@ rule make_skm:
     threads: 1
     run:
         # Import and call your merge function here
-        from mypipeline.make_skm import merge_lh5_files
+        from ge77m_search_workflow.make_skm import merge_lh5_files
         merge_lh5_files(list(input), output[0])
