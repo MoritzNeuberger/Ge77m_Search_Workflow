@@ -11,8 +11,8 @@ setup(
         "pandas",
         "snakemake",
         "pygama",
-        "lgdo",
-        "legendmeta"
+        "legend-pydataobj",
+        "pylegendmeta"
         # (empty, since we list deps in your envs/*.yaml)
     ],
 )
