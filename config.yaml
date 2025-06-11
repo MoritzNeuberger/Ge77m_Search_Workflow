@@ -1,10 +1,15 @@
 # config.yaml
 
-# Where to look for the initial .lh5 files:
-input_root: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-v2.1.0/generated/tier/pht/phy
-
 # Where to put generated files:
 out_root: gen
+
+default_ref_version: "v2.1.0"
+fallback_ref_version: "v2.0.0"
+
+
+# Where to look for the initial .lh5 files:
+input_root: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/{default_ref_version}/generated/tier/pht/phy
+
 
 # Target file for processing:
 target_file: ""  # Leave empty for all files, or set to a specific filename (without path)

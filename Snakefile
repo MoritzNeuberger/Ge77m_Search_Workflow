@@ -6,6 +6,8 @@ import re
 
 configfile: "config.yaml"
 
+input_root = config["input_root"].format(default_ref_version=config["default_ref_version"])
+
 # include all rule files
 include: "rules/mu_hpge_coinc.smk"
 include: "rules/delayed_coinc.smk"
@@ -14,8 +16,8 @@ include: "rules/make_skm.smk"
 # discover all initial inputs
 # They live under config["input_root"]/*/*/*.lh5
 initial = []
-for lvl1 in os.listdir(config["input_root"]):
-    p1 = os.path.join(config["input_root"], lvl1)
+for lvl1 in os.listdir(input_root):
+    p1 = os.path.join(input_root, lvl1)
     if os.path.isdir(p1):
         for lvl2 in os.listdir(p1):
             p2 = os.path.join(p1, lvl2)

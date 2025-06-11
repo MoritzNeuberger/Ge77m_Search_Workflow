@@ -30,7 +30,7 @@ def generate_paths_of_different_tiers_from_pht(input_path, fallback_defult="ref-
     return paths
 
 
-def process_mu_hpge_coinc(input, output):
+def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_defult="ref-v2.0.0"):
     """
     Process coincidences between muon channel and HPGe channel.
 

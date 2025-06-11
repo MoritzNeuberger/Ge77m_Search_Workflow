@@ -1,5 +1,11 @@
 # rules/delayed_coinc.smk
 
+configfile: "config.yaml"
+
+# Format input_root with the default_ref_version from config
+input_root = config["input_root"].format(default_ref_version=config["default_ref_version"])
+
+
 rule delayed_coinc:
     """
     Take the mu_hpge_coinc output and produce
@@ -15,7 +21,7 @@ rule delayed_coinc:
             lvl2=wc["lvl2"],
             base=wc["base"].replace("tier_dc", "tier_mgc")
         )),
-        pht_files=(lambda wc: config["input_root"] + "/{lvl1}/{lvl2}/{base}.lh5".format(
+        pht_files=(lambda wc: input_root + "/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
             base=wc["base"].replace("tier_dc", "tier_pht")
