@@ -1,0 +1,8 @@
+name: mu_hpge_coinc
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - -e .    # this will install your local ge77m_search_workflow package

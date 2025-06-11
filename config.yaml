@@ -1,0 +1,12 @@
+# config.yaml
+
+# Where to look for the initial .lh5 files:
+input_root: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-v2.1.0/generated/tier/pht/phy
+
+# Where to put generated files:
+out_root: gen
+
+# List of rules in execution order:
+workflow:
+  - mu_hpge_coinc
+  - delayed_coinc

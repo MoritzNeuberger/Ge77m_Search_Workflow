@@ -1,0 +1,11 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="ge77m_search_workflow",
+    version="0.1.0",
+    packages=find_packages(where="scripts"),
+    package_dir={"": "scripts"},
+    install_requires=[
+        # (empty, since we list deps in your envs/*.yaml)
+    ],
+)

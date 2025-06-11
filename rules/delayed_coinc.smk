@@ -1,0 +1,32 @@
+# rules/delayed_coinc.smk
+
+rule delayed_coinc:
+    """
+    Take the mu_hpge_coinc output and produce
+    tier_dc.lh5 in gen/delayed_coinc/...
+    """
+
+    conda:
+        "../envs/delayed_coinc.yaml"
+
+    input:
+        # depends on mu_hpge_coinc output
+        os.path.join(
+            config["out_root"],
+            "mu_hpge_coinc",
+            "{lvl1}",
+            "{lvl2}",
+            "{base}".replace("tier_pht", "tier_mgc") + ".lh5"
+        )
+    output:
+        # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_dc.lh5
+        os.path.join(
+            config["out_root"],
+            "delayed_coinc",
+            "{lvl1}",
+            "{lvl2}",
+            "{base}".replace("tier_pht", "tier_dc") + ".lh5"
+        )
+    run:
+        from mypipeline.dc import process_delayed_coinc
+        process_delayed_coinc(input[0], output[0])
