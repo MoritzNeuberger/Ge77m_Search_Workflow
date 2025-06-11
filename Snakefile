@@ -61,7 +61,7 @@ for d in initial:
         )
     )
 print(f"Initial inputs: {len(initial)}")
-print(f"All outputs: {len(all_outputs)}")
+print(f"All outputs: {all_outputs}")
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:
