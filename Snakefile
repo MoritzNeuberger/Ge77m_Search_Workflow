@@ -23,7 +23,6 @@ for lvl1 in os.listdir(config["input_root"]):
                 for f in glob.glob(os.path.join(p2, "*.lh5")):
                     base = os.path.basename(f).rsplit(".lh5", 1)[0]
                     # Filter if target_file is set
-                    print(base)
                     if config.get("target_file") and base != config["target_file"].rsplit(".lh5", 1)[0]:
                         continue
                     initial.append(dict(lvl1=lvl1, lvl2=lvl2, base=base))
@@ -60,6 +59,5 @@ rule all:
                 "{lvl1}",
                 "{lvl1}-{lvl2}.lh5"
             ),
-            lvl1=[x[0] for x in lvl1_lvl2_pairs],
-            lvl2=[x[1] for x in lvl1_lvl2_pairs]
+            **{**{k: [d[k] for d in initial] for k in ["lvl1","lvl2","base"]} }
         )
