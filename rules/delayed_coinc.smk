@@ -14,7 +14,7 @@ rule delayed_coinc:
             "mu_hpge_coinc",
             "{lvl1}",
             "{lvl2}",
-            "{base}" + ".lh5"
+            "{base}".replace("tier_dc", "tier_mgc") + ".lh5"
         )
     output:
         # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_dc.lh5
