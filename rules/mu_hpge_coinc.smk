@@ -7,7 +7,7 @@ rule mu_hpge_coinc:
     """
 
     wildcard_constraints:
-        base=".*pht.*"
+        base="*pht.*"
 
     # input is the previous-layer file
     input:
