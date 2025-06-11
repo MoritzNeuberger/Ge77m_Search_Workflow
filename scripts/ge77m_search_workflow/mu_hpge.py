@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from lgdo.lh5 import LH5Store, write
-from lgdo.types import Table
+import lgdo.types as types 
 import awkward as ak
 import utils as ut
 
@@ -96,8 +96,20 @@ def process_mu_hpge_coinc(input, output):
             output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
             output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
 
+    output_data["hit_table"] = types.Array(output_data["hit_table"])
+    output_data["hit_idx"] = types.Array(output_data["hit_idx"])
+    output_data["evt_idx"] = types.Array(output_data["evt_idx"])
+    output_data["timestamp"] = types.Array(output_data["timestamp"])
+    output_data["cuspEmax_ctc_cal"] = types.Array(output_data["cuspEmax_ctc_cal"])
+    output_data["is_good_hit"] = types.Array(output_data["is_good_hit"])
+    output_data["mu_diff"] = types.Array(output_data["mu_diff"])
+    output_data["tp_01_hpge"] = types.Array(output_data["tp_01_hpge"])
+    output_data["tp_max_muon"] = types.Array(output_data["tp_max_muon"])
+    output_data["is_in_coincidence_with_mu"] = types.Array(output_data["is_in_coincidence_with_mu"])
+    output_data["is_saturated"] = types.Array(output_data["is_saturated"])
+
     # write to lh5 file
-    output_lh5 = Table(col_dict=output_data)
+    output_lh5 = types.Table(col_dict=output_data)
     write(output_lh5, name="mgc", lh5_file=output)
 
 
