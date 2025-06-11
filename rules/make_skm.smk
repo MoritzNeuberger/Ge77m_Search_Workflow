@@ -7,7 +7,7 @@ rule make_skm:
     """
 
     wildcard_constraints:
-        base=".*dc.*"
+        base=".*abc.*"
     input:
         lambda wc: sorted(
             glob.glob(
