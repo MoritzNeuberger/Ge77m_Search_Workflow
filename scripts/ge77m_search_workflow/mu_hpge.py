@@ -96,6 +96,7 @@ def process_mu_hpge_coinc(input, output):
             output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
             output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
 
+    print(output_data["tp_01_hpge"])
     output_data["hit_table"] = types.Array(output_data["hit_table"])
     output_data["hit_idx"] = types.Array(output_data["hit_idx"])
     output_data["evt_idx"] = types.Array(output_data["evt_idx"])
