@@ -23,6 +23,7 @@ for lvl1 in os.listdir(config["input_root"]):
                 for f in glob.glob(os.path.join(p2, "*.lh5")):
                     base = os.path.basename(f).rsplit(".lh5", 1)[0]
                     initial.append(dict(lvl1=lvl1, lvl2=lvl2, base=base))
+print("Number of initial inputs found:", len(initial))
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:
