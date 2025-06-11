@@ -1,3 +1,4 @@
+pyproject.toml
 setup.py
 scripts/ge77m_search_workflow/__init__.py
 scripts/ge77m_search_workflow/dc.py
