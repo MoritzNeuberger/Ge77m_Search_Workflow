@@ -5,7 +5,6 @@ import lgdo.types as types
 import awkward as ak
 
 import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
