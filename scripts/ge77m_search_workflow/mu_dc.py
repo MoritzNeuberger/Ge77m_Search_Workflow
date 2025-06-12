@@ -121,8 +121,11 @@ def find_delayed_coincicence_candidates(hpge_data, mgc_data, max_delta_sec):
         for j in range(len(mgc_data)):
 
             dT = mgc_data[j]["coinc"]["id"]["timestamp"] - hpge_data[i]["geds"]["id"]["timestamp"]
-            if dT < 0 or dT > max_delta_sec:
+            print(dT)
+            if dT < 0:
                 continue
+            if dT > max_delta_sec:
+                break
 
             output_data["prompt"].append(mgc_data[j].to_list())
             output_data["delayed"].append(hpge_data[i])
@@ -130,7 +133,6 @@ def find_delayed_coincicence_candidates(hpge_data, mgc_data, max_delta_sec):
 
     return ut.dict_to_lgdo(output_data)
 
-    
 
 def save_output(mdc_data,output):
     lh5.write(mdc_data, name="mdc", lh5_file=str(output))
