@@ -52,7 +52,8 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             "energy": [],
             "tp_01": [],
             "quality": {
-                "is_good_hit": [],
+                "is_bb_like": [],
+                "is_good_channel": [],
                 "is_saturated": []
             },
             "id": {
@@ -105,9 +106,10 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             evt_idx = tcm_idx[hpge_idx]
             evt_id = np.where(pet_data_geds["rawid"][evt_idx] == selected_id[i])[0][0]
 
-            output_data["geds"]["energy"].append(data_pht_hpge["trapEmax_ctc_cal"][0])
+            output_data["geds"]["energy"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
             output_data["geds"]["tp_01"].append(data_psp_hpge["tp_01"][0])
-            output_data["geds"]["quality"]["is_good_hit"].append(pet_data_geds[evt_idx]["is_good_hit"][evt_id])
+            output_data["geds"]["quality"]["is_bb_like"].append(pet_data_geds[evt_idx]["is_bb_like"])
+            output_data["geds"]["quality"]["is_good_channel"].append(pet_data_geds[evt_idx]["is_good_channel"][evt_id])
             output_data["geds"]["quality"]["is_saturated"].append(data_pht_hpge["is_saturated"][0])
             output_data["geds"]["id"]["hit_table"].append(tcm_id[hpge_idx])
             output_data["geds"]["id"]["hit_idx"].append(hpge_idx)
@@ -115,7 +117,6 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             output_data["mu"]["tp_max"].append(data_psp_muon["tp_max"][0])
             output_data["mu"]["id"]["hit_table"].append(tcm_id[muon_idx])
             output_data["mu"]["id"]["hit_idx"].append(muon_idx)
-            output_data["mu"]["id"]["evt_idx"].append(tcm_idx[muon_idx])
 
             output_data["coinc"]["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_max"])[0])
             output_data["coinc"]["is_in_coincidence_with_mu"].append(
