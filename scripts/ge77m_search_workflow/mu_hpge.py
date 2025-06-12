@@ -102,7 +102,11 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
                         idx=[tcm_idx[muon_idx]])[0].view_as("ak")
 
             evt_idx = tcm_idx[hpge_idx]
-            evt_id = np.where(pet_data_geds[evt_idx]["hit_idx"] == hpge_idx)[0][0]
+            try:
+                evt_id = np.where(pet_data_geds[evt_idx]["hit_idx"] == hpge_idx)[0][0]
+            except IndexError:
+                print(f"Warning: No hit_idx found for HPGe index {hpge_idx} in event {evt_idx}. Skipping.")
+                raise
 
             output_data["geds"]["energy"].append(data_pht_hpge["trapEmax_ctc_cal"][0])
             output_data["geds"]["tp_01"].append(data_psp_hpge["tp_01"][0])
