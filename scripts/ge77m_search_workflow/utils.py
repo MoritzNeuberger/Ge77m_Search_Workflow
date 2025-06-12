@@ -79,8 +79,11 @@ def generate_data_loader(run_info,config_file):
     dl.set_files(file_query)
     return dl
 
-def generate_channel_map(ts):
-    lmeta = LegendMetadata()
+def generate_channel_map(ts,metadata=None):
+    if metadata is not None:
+        lmeta = LegendMetadata(metadata)
+    else:
+        lmeta = LegendMetadata()
     chmap = lmeta.channelmap(on=ts)
     return chmap
 

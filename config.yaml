@@ -6,6 +6,8 @@ out_root: gen
 default_ref_version: "v2.1.0"
 fallback_ref_version: "v2.0.0"
 
+metadata: /global/cfs/cdirs/m2676/users/neuberger/Ge77m_dc_search/v04/legend-metadata
+
 
 # Where to look for the initial .lh5 files:
 input_root: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-{default_ref_version}/generated/tier/pht/phy

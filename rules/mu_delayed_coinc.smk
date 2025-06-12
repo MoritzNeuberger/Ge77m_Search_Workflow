@@ -40,4 +40,11 @@ rule delayed_coinc:
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         from ge77m_search_workflow.mu_dc import process_mu_delayed_coinc
-        process_mu_delayed_coinc(input, output)
+        process_mu_delayed_coinc(
+            input, 
+            output,
+            default_ref_version=config["default_ref_version"],
+            fallback_ref_version=config["fallback_ref_version"],
+            metadata=config["metadata"]
+        )
+

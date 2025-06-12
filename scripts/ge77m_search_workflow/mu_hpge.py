@@ -17,7 +17,7 @@ min_cuspEmax = 25
 
 
 
-def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0"):
+def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None):
     """
     Process coincidences between muon channel and HPGe channel.
 
@@ -40,7 +40,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     tcm_idx = store.read("/hardware_tcm_1/array_idx", paths["tcm"])[0].view_as("np")
     
     timestamp = ut.extract_timestamp_raw(paths["pet"])
-    chmap = ut.generate_channel_map(timestamp)
+    chmap = ut.generate_channel_map(timestamp, metadata=metadata)
     data_streams_hpge = ut.select_datastreams(chmap, "HPGE")
 
     mask_muon_coinc = pet_data_coinc["muon_offline"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]

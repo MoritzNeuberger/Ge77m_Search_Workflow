@@ -43,5 +43,6 @@ rule mu_hpge_coinc:
             input, 
             output, 
             default_ref_version=config["default_ref_version"], 
-            fallback_ref_version=config["fallback_ref_version"]
+            fallback_ref_version=config["fallback_ref_version"],
+            metadata=config["metadata"]
         )

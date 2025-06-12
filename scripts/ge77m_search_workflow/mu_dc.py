@@ -27,7 +27,7 @@ def load_mgc_data_of_run(mgc_file_name):
     return ak.concatenate(aggregated_data)
 
 
-def generate_hpge_data(pht_file_name, default_ref_version, fallback_ref_version):
+def generate_hpge_data(pht_file_name, default_ref_version, fallback_ref_version, metadata=None):
 
     paths = ut.generate_paths_of_different_tiers_from_pht(pht_file_name,default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
 
@@ -40,7 +40,7 @@ def generate_hpge_data(pht_file_name, default_ref_version, fallback_ref_version)
     tcm_idx = store.read("/hardware_tcm_1/array_idx", paths["tcm"])[0].view_as("np")
 
     timestamp = ut.extract_timestamp_raw(paths["pet"])
-    chmap = ut.generate_channel_map(timestamp)
+    chmap = ut.generate_channel_map(timestamp, metadata=metadata)
     data_streams_hpge = ut.select_datastreams(chmap, "HPGE")
 
     mask = ~pet_data_coinc["muon_offline"] & ~pet_data_coinc["puls"] & (pet_data_geds["energy_sum"] > 50)
@@ -138,9 +138,9 @@ def save_output(mdc_data,output):
     lh5.write(mdc_data, name="mdc", lh5_file=str(output))
 
 
-def process_mu_delayed_coinc(input, output,default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", max_delta_sec=100*53.7):
+def process_mu_delayed_coinc(input, output,default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", max_delta_sec=100*53.7, metadata=None):
 
     mgc_data = load_mgc_data_of_run(input.mgc_files)
-    hpge_data = generate_hpge_data( input.pht_files, default_ref_version=default_ref_version, fallback_ref_version=fallback_ref_version)
+    hpge_data = generate_hpge_data( input.pht_files, default_ref_version=default_ref_version, fallback_ref_version=fallback_ref_version, metadata=metadata)
     mdc_data = find_delayed_coincicence_candidates(mgc_data,hpge_data, max_delta_sec=max_delta_sec)
     save_output(mdc_data,output)
