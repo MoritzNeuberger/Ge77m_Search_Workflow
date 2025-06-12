@@ -75,6 +75,4 @@ rule mdc_all:
     # Here, we just use input/output to enforce order
 
 # Make mdc_all depend on mgc_all
-use rule mgc_all as mgc_done
-use rule mdc_all as mdc_done
-ruleorder: mgc_done > mdc_done
+ruleorder: mgc_all > mdc_all

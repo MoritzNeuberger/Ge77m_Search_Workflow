@@ -45,6 +45,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
 
     mask_muon_coinc = pet_data_coinc["muon_offline"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
     selected_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask_muon_coinc]))
+    selected_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask_muon_coinc]))
 
     output_data = {
         "geds": {
@@ -102,11 +103,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
                         idx=[tcm_idx[muon_idx]])[0].view_as("ak")
 
             evt_idx = tcm_idx[hpge_idx]
-            try:
-                evt_id = np.where(pet_data_geds[evt_idx]["hit_idx"] == hpge_idx)[0][0]
-            except IndexError:
-                print(f"Warning: No hit_idx found for HPGe index {hpge_idx} in event {evt_idx} ({pet_data_geds[evt_idx]["hit_idx"]}). Skipping.")
-                raise
+            evt_id = np.where(pet_data_geds["rawid"][evt_idx] == selected_id[i])[0][0]
 
             output_data["geds"]["energy"].append(data_pht_hpge["trapEmax_ctc_cal"][0])
             output_data["geds"]["tp_01"].append(data_psp_hpge["tp_01"][0])
