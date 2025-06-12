@@ -369,7 +369,7 @@ def save_output(run_info,output,output_folder):
 
 def process_mu_delayed_coinc(input, output):
 
-    print("Input: ", input, type(input))
+    print("Input: ", input, type(input), input.mgc_files, input.pht_files)
     print("Output: ", output)
 
 #    
