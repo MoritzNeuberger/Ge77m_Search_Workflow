@@ -8,13 +8,13 @@ def generate_folder_path_from_run_info(run_info):
 
 from lgdo import types
 
-def dict_to_lgdo(dict):
+def dict_to_lgdo(in_dict):
     """
     A helper function that turns a nested dict containing equal sized arrays to a lgdo.type.Table, 
     with each sub dict also being turn into a lgdo.type.Table and each array into a lgdo.type.Array.
     """
     tables = {}
-    for key, value in dict.items():
+    for key, value in in_dict.items():
         if isinstance(value, dict):
             tables[key] = dict_to_lgdo(value)
         else:
