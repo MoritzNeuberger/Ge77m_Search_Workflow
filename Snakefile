@@ -15,9 +15,11 @@ include: "rules/make_skm.smk"
 
 # discover all initial inputs
 # They live under config["input_root"]/*/*/*.lh5
+print(config["ignore_periods"])
 initial = []
 for lvl1 in os.listdir(input_root):
     p1 = os.path.join(input_root, lvl1)
+    print(p1)
     if p1 in config["ignore_periods"]:
         continue  # Skip ignored periods
     if os.path.isdir(p1):
