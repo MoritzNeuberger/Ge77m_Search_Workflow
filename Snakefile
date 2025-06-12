@@ -15,7 +15,7 @@ include: "rules/make_skm.smk"
 
 # discover all initial inputs
 # They live under config["input_root"]/*/*/*.lh5
-print(config["ignore_periods"])
+
 initial = []
 for lvl1 in os.listdir(input_root):
     if lvl1 in config["ignore_periods"]:

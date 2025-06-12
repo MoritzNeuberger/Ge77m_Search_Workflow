@@ -90,7 +90,6 @@ def generate_channel_map(ts,metadata=None):
 def get_HPGe_channels(chmap,usability_condition='on',psd_type="low_aoe"):
     channels = chmap.map("system", unique=False)["geds"]
     channels = channels.map("analysis.usability", unique=False)[usability_condition]
-    print("analysis.psd.status."+psd_type,channels.map("analysis.psd.status."+psd_type, unique=False).keys())
     channels = channels.map("analysis.psd.status."+psd_type, unique=False)['valid']
     channels = channels.map("daq.rawid", unique=False)
     return channels

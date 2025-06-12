@@ -104,6 +104,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
                         idx=[tcm_idx[muon_idx]])[0].view_as("ak")
 
             evt_idx = tcm_idx[hpge_idx]
+            print(pet_data_geds["rawid"][evt_idx], selected_id[i])
             evt_id = np.where(pet_data_geds["rawid"][evt_idx] == selected_id[i])[0][0]
 
             output_data["geds"]["energy"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
