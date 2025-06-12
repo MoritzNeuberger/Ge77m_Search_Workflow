@@ -87,9 +87,11 @@ def generate_channel_map(ts,metadata=None):
     chmap = lmeta.channelmap(on=ts)
     return chmap
 
-def get_HPGe_channels(chmap,usability_condition='on'):
+def get_HPGe_channels(chmap,usability_condition='on',psd_type="low_aoe"):
     channels = chmap.map("system", unique=False)["geds"]
     channels = channels.map("analysis.usability", unique=False)[usability_condition]
+    channels = channels.map("analysis.psd.status."+psd_type, unique=False)["valid"]
+    channels = channels.map("daq.rawid", unique=False)
     return channels
 
 def select_datastreams(chmap,stream):
@@ -98,26 +100,3 @@ def select_datastreams(chmap,stream):
     else:
         datastreams = [chmap.map("name")[stream].daq.rawid]
     return datastreams
-
-
-def get_entry_list(dl, chmap, stream, cuts):
-    dl.set_datastreams(select_datastreams(chmap,stream), "ch")
-    dl.set_cuts(cuts)
-    dl.set_output(columns=["trapEmax_ctc_cal","trapTmax", "timestamp","tp_01", "tp_max", "wf_max", "waveform"], fmt="pd.DataFrame")
-    el = dl.build_entry_list(tcm_level="tcm")
-    add_evt_idx_abs(el)
-    return el
-
-def get_data(dl, chmap, stream, entry_list, columns):
-    dl.set_datastreams(select_datastreams(chmap,stream), "ch")
-    dl.set_output(columns=columns, fmt="pd.DataFrame")
-    return dl.load(entry_list)
-
-def get_data_new(dl, chmap, stream, entry_list, columns):
-    dl.set_datastreams(select_datastreams(chmap,stream), "ch")
-    dl.set_output(columns=columns, fmt="pd.DataFrame")
-    return dl.load(entry_list)
-
-
-def add_evt_idx_abs(el):
-    el["evt_idx_abs"] = el.file * 10000 + el.evt_idx
