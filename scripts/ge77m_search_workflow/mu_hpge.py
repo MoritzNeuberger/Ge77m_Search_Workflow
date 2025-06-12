@@ -43,7 +43,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     chmap = ut.generate_channel_map(timestamp, metadata=metadata)
     data_streams_hpge = ut.select_datastreams(chmap, "HPGE")
 
-    mask_muon_coinc = pet_data_coinc["muon_offline"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
+    mask_muon_coinc = pet_data_coinc["muon"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
     selected_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask_muon_coinc]))
     selected_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask_muon_coinc]))
 
@@ -104,7 +104,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
                         idx=[tcm_idx[muon_idx]])[0].view_as("ak")
 
             evt_idx = tcm_idx[hpge_idx]
-            
+
             if not selected_id[i] in pet_data_geds["rawid"][evt_idx]:
                 continue
             
