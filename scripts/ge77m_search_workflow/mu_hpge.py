@@ -24,7 +24,6 @@ def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, 
     Returns:
         dict: Dictionary containing paths for pht, pet, dsp, and tcm.
     """
-    print(input_path,type(input_path))
 
     paths = {}
     paths['pht'] = input_path
@@ -140,7 +139,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             )
 
     output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
-    write(output_lh5, name="mgc", lh5_file=output)
+    write(output_lh5, name="mgc", lh5_file=str(output))
 
 
 if __name__ == "__main__":
