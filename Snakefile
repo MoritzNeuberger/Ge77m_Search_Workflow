@@ -77,9 +77,3 @@ rule mdc_all:
 use rule mgc_all as mgc_done
 use rule mdc_all as mdc_done
 ruleorder: mgc_done > mdc_done
-
-# Or, if you want to enforce via input:
-rule mdc_all:
-    input:
-        mgc_done=mgc_outputs,
-        mdc_outputs=dc_outputs
