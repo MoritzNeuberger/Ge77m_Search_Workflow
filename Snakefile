@@ -55,7 +55,7 @@ for d in initial:
         )
     )
 
-all_inputs = sorted(set(mgc_outputs + dc_outputs))  # Remove duplicates and sort
+all_inputs = sorted(set(mgc_outputs + mdc_outputs))  # Remove duplicates and sort
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:
@@ -66,20 +66,20 @@ rule mgc_all:
     input:
         mgc_outputs
 
-rule dc_all:
+rule mdc_all:
     input:
-        dc_outputs
-    # This ensures dc_all only runs after mgc_all is complete
+        mdc_outputs
+    # This ensures mdc_all only runs after mgc_all is complete
     # Use 'run' or 'shell' as appropriate for your workflow
     # Here, we just use input/output to enforce order
 
-# Make dc_all depend on mgc_all
+# Make mdc_all depend on mgc_all
 use rule mgc_all as mgc_done
-use rule dc_all as dc_done
-ruleorder: mgc_done > dc_done
+use rule mdc_all as mdc_done
+ruleorder: mgc_done > mdc_done
 
 # Or, if you want to enforce via input:
-rule dc_all:
+rule mdc_all:
     input:
         mgc_done=mgc_outputs,
-        dc_outputs=dc_outputs
+        mdc_outputs=dc_outputs

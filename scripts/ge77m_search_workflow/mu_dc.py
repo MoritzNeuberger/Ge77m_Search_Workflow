@@ -366,11 +366,15 @@ def save_output(run_info,output,output_folder):
 
 
 def process_mu_delayed_coinc(input, output):
-    
-    muon_tagged_data = get_muon_tagged_data_of_run(run_info,args["muon_tagged_folder"])
 
-    hpge_data = get_hpge_data(run_info,args["config_file"])
+    print("Input: ", input)
+    print("Output: ", output)
 
-    merged_data = match_muon_HPGe(hpge_data, muon_tagged_data,args["max_time_gate"])
-
-    save_output(run_info,merged_data,args["output_folder"])
+#    
+#    muon_tagged_data = get_muon_tagged_data_of_run(run_info,args["muon_tagged_folder"])
+#
+#    hpge_data = get_hpge_data(run_info,args["config_file"])
+#
+#    merged_data = match_muon_HPGe(hpge_data, muon_tagged_data,args["max_time_gate"])
+#
+#    save_output(run_info,merged_data,args["output_folder"])
