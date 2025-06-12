@@ -49,7 +49,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     between muon and HPGe channels, and writes the results to the output files.
     
     """
-    paths = generate_paths_of_different_tiers_from_pht(input,default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
+    paths = generate_paths_of_different_tiers_from_pht(str(input),default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
     
     store = LH5Store()
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
