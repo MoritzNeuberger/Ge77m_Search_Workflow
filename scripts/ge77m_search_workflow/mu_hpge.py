@@ -16,7 +16,7 @@ import utils as ut
 acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
-def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, fallback_defult):
+def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, fallback_ref_version):
     """
     Generate paths for different tiers based on the input path.
     Args:
@@ -29,13 +29,13 @@ def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, 
     paths['pet'] = input_path.replace("pht", "pet")
     paths["psp"] = input_path.replace("pht", "psp")
     if not os.path.exists(paths['psp']):
-        paths['psp'] = input_path.replace("pht", "psp").replace(default_ref_version, fallback_defult)
+        paths['psp'] = input_path.replace("pht", "psp").replace(default_ref_version, fallback_ref_version)
     paths['tcm'] = input_path.replace("pht", "tcm")
     if not os.path.exists(paths['tcm']):
-        paths['tcm'] = input_path.replace("pht", "tcm").replace(default_ref_version, fallback_defult)
+        paths['tcm'] = input_path.replace("pht", "tcm").replace(default_ref_version, fallback_ref_version)
     return paths
 
-def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_defult="ref-v2.0.0"):
+def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0"):
     """
     Process coincidences between muon channel and HPGe channel.
 
@@ -48,7 +48,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     
     """
 
-    paths = generate_paths_of_different_tiers_from_pht(input,default_ref_version=default_ref_version,fallback_defult=fallback_defult)
+    paths = generate_paths_of_different_tiers_from_pht(input,default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
     
     store = LH5Store()
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
