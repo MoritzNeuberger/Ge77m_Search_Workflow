@@ -9,7 +9,7 @@ input_root = config["input_root"].format(default_ref_version=config["default_ref
 rule delayed_coinc:
     """
     Take the mu_hpge_coinc output and produce
-    tier_mdc.lh5 in gen/delayed_coinc/...
+    tier_mdc.lh5 in gen/mu_delayed_coinc/...
     """
 
     wildcard_constraints:
@@ -27,10 +27,10 @@ rule delayed_coinc:
             base=wc["base"].replace("tier_mdc", "tier_pht")
         ))
     output:
-        # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_mdc.lh5
+        # e.g. gen/mu_delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_mdc.lh5
         os.path.join(
             config["out_root"],
-            "delayed_coinc",
+            "mu_delayed_coinc",
             "{lvl1}",
             "{lvl2}",
             "{base}" + ".lh5"
