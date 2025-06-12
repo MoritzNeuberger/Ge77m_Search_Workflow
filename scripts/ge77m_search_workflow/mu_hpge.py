@@ -3,6 +3,12 @@ import numpy as np
 from lgdo.lh5 import LH5Store, write
 import lgdo.types as types 
 import awkward as ak
+
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+
 import utils as ut
 
 
