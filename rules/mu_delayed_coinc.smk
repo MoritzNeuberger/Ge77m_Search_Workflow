@@ -25,7 +25,8 @@ rule delayed_coinc:
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
             base=wc["base"].replace("tier_mdc", "tier_pht")
-        ))
+        )),
+        barrier="/tmp/mgc_all.done"
     output:
         # e.g. gen/mu_delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_mdc.lh5
         os.path.join(

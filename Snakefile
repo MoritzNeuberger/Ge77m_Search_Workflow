@@ -73,6 +73,19 @@ rule mdc_all:
     input:
         mgc_outputs,
         mdc_outputs
+
+
+barrier_file = "/tmp/mgc_all.done"
+
+rule mgc_barrier:
+    input:
+        mgc_outputs
+    output:
+        barrier_file
+    shell:
+        "touch {output}"
+        
+    
     # This ensures mdc_all only runs after mgc_all is complete
     # Use 'run' or 'shell' as appropriate for your workflow
     # Here, we just use input/output to enforce order
