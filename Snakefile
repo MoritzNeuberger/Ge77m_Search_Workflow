@@ -68,7 +68,7 @@ rule mgc_all:
 
 rule mdc_all:
     input:
-        mgc_all,
+        mgc_outputs,
         mdc_outputs
     # This ensures mdc_all only runs after mgc_all is complete
     # Use 'run' or 'shell' as appropriate for your workflow
