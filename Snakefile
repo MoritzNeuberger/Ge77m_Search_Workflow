@@ -18,10 +18,9 @@ include: "rules/make_skm.smk"
 print(config["ignore_periods"])
 initial = []
 for lvl1 in os.listdir(input_root):
-    p1 = os.path.join(input_root, lvl1)
-    print(p1)
-    if p1 in config["ignore_periods"]:
+    if lvl1 in config["ignore_periods"]:
         continue  # Skip ignored periods
+    p1 = os.path.join(input_root, lvl1)
     if os.path.isdir(p1):
         for lvl2 in os.listdir(p1):
             p2 = os.path.join(p1, lvl2)
