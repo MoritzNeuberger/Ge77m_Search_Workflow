@@ -7,6 +7,7 @@ def generate_folder_path_from_run_info(run_info):
     return "{}/{}/{}/".format(run_info["datatype"],run_info["period"],run_info["run"])
 
 from lgdo import types
+import os
 
 def dict_to_lgdo(in_dict):
     """
@@ -21,6 +22,25 @@ def dict_to_lgdo(in_dict):
             tables[key] = types.Array(value)
     return types.Table(tables)
 
+def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, fallback_ref_version):
+    """
+    Generate paths for different tiers based on the input path.
+    Args:
+        input_path (str): Path to the input file.
+    Returns:
+        dict: Dictionary containing paths for pht, pet, dsp, and tcm.
+    """
+
+    paths = {}
+    paths['pht'] = input_path
+    paths['pet'] = input_path.replace("pht", "pet")
+    paths["psp"] = input_path.replace("pht", "psp")
+    if not os.path.exists(paths['psp']):
+        paths['psp'] = input_path.replace("pht", "psp").replace(default_ref_version, fallback_ref_version)
+    paths['tcm'] = input_path.replace("pht", "tcm")
+    if not os.path.exists(paths['tcm']):
+        paths['tcm'] = input_path.replace("pht", "tcm").replace(default_ref_version, fallback_ref_version)
+    return paths
 
 
 from datetime import datetime 

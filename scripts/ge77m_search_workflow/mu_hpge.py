@@ -15,25 +15,7 @@ import utils as ut
 acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
-def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, fallback_ref_version):
-    """
-    Generate paths for different tiers based on the input path.
-    Args:
-        input_path (str): Path to the input file.
-    Returns:
-        dict: Dictionary containing paths for pht, pet, dsp, and tcm.
-    """
 
-    paths = {}
-    paths['pht'] = input_path
-    paths['pet'] = input_path.replace("pht", "pet")
-    paths["psp"] = input_path.replace("pht", "psp")
-    if not os.path.exists(paths['psp']):
-        paths['psp'] = input_path.replace("pht", "psp").replace(default_ref_version, fallback_ref_version)
-    paths['tcm'] = input_path.replace("pht", "tcm")
-    if not os.path.exists(paths['tcm']):
-        paths['tcm'] = input_path.replace("pht", "tcm").replace(default_ref_version, fallback_ref_version)
-    return paths
 
 def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0"):
     """
@@ -47,11 +29,12 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     between muon and HPGe channels, and writes the results to the output files.
     
     """
-    paths = generate_paths_of_different_tiers_from_pht(str(input),default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
+    paths = ut.generate_paths_of_different_tiers_from_pht(str(input),default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
     
     store = LH5Store()
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
     pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
+    pet_data_trigger = store.read("/evt/trigger/", paths["pet"])[0].view_as("ak")
     
     tcm_id = store.read("/hardware_tcm_1/array_id", paths["tcm"])[0].view_as("np")
     tcm_idx = store.read("/hardware_tcm_1/array_idx", paths["tcm"])[0].view_as("np")
@@ -74,7 +57,6 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             "id": {
                 "hit_table": [],
                 "hit_idx": [],
-                "evt_idx": []
             }
         },
         "mu": {
@@ -82,12 +64,15 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             "id": {
                 "hit_table": [],
                 "hit_idx": [],
-                "evt_idx": []
             }
         },
         "coinc": {
             "mu_diff": [],
-            "is_in_coincidence_with_mu": []
+            "is_in_coincidence_with_mu": [],
+            "id":{
+                "evt_idx": [],
+                "timestamp": []
+            }
         }
     }
 
@@ -125,7 +110,6 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             output_data["geds"]["quality"]["is_saturated"].append(data_pht_hpge["is_saturated"][0])
             output_data["geds"]["id"]["hit_table"].append(tcm_id[hpge_idx])
             output_data["geds"]["id"]["hit_idx"].append(hpge_idx)
-            output_data["geds"]["id"]["evt_idx"].append(tcm_idx[hpge_idx])
 
             output_data["mu"]["tp_max"].append(data_psp_muon["tp_max"][0])
             output_data["mu"]["id"]["hit_table"].append(tcm_id[muon_idx])
@@ -136,6 +120,8 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             output_data["coinc"]["is_in_coincidence_with_mu"].append(
                 (acc_range[0] < output_data["coinc"]["mu_diff"][-1] < acc_range[1])
             )
+            output_data["coinc"]["id"]["evt_idx"].append(tcm_idx[hpge_idx])
+            output_data["coinc"]["id"]["timestamp"].append(pet_data_trigger[evt_idx]["timestamp"])
 
     output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
     write(output_lh5, name="mgc", lh5_file=str(output))
