@@ -1,9 +1,9 @@
 
 import glob
 import sys
+import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import utils as ut
-import os
 import pandas as pd
 import pygama
 from packaging.version import Version
