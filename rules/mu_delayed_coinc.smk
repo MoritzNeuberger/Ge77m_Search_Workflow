@@ -9,25 +9,25 @@ input_root = config["input_root"].format(default_ref_version=config["default_ref
 rule delayed_coinc:
     """
     Take the mu_hpge_coinc output and produce
-    tier_dc.lh5 in gen/delayed_coinc/...
+    tier_mdc.lh5 in gen/delayed_coinc/...
     """
 
     wildcard_constraints:
-        base=".*tier_dc.*"
+        base=".*tier_mdc.*"
 
     input:
         mgc_files=(lambda wc: config["out_root"] + "/mu_hpge_coinc/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
-            base=wc["base"].replace("tier_dc", "tier_mgc")
+            base=wc["base"].replace("tier_mdc", "tier_mgc")
         )),
         pht_files=(lambda wc: input_root + "/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
             lvl2=wc["lvl2"],
-            base=wc["base"].replace("tier_dc", "tier_pht")
+            base=wc["base"].replace("tier_mdc", "tier_pht")
         ))
     output:
-        # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_dc.lh5
+        # e.g. gen/delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_mdc.lh5
         os.path.join(
             config["out_root"],
             "delayed_coinc",
@@ -39,5 +39,5 @@ rule delayed_coinc:
         import os
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        from ge77m_search_workflow.dc import process_delayed_coinc
-        process_delayed_coinc(input, output)
+        from ge77m_search_workflow.mu_dc import process_mu_delayed_coinc
+        process_mu_delayed_coinc(input, output)

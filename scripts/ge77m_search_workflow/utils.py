@@ -6,6 +6,23 @@ def check_folder_path(path):
 def generate_folder_path_from_run_info(run_info):
     return "{}/{}/{}/".format(run_info["datatype"],run_info["period"],run_info["run"])
 
+from lgdo import types
+
+def dict_to_lgdo(dict):
+    """
+    A helper function that turns a nested dict containing equal sized arrays to a lgdo.type.Table, 
+    with each sub dict also being turn into a lgdo.type.Table and each array into a lgdo.type.Array.
+    """
+    tables = {}
+    for key, value in dict.items():
+        if isinstance(value, dict):
+            tables[key] = dict_to_lgdo(value)
+        else:
+            tables[key] = types.Array(value)
+    return types.Table(tables)
+
+
+
 from datetime import datetime 
 import re
 # Define a custom key function to extract and convert the timestamp

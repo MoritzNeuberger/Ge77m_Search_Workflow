@@ -193,9 +193,9 @@ def save_output(run_info,output,output_folder):
                         + "-" + file_info["datatype"] 
 
                         + "-" + file_info["timestamp"] 
-                        + "-" + "tier_mu_hpge_dc.lh5")
+                        + "-" + "tier_mu_hpge_mdc.lh5")
     #ls = LH5Store()
-    #ls.write_object(output,"muon_HPGe_dc",output_file_name)
+    #ls.write_object(output,"muon_HPGe_mdc",output_file_name)
     #print(output)
     output.to_hdf((output_folder + output_file_name),"df")
 
@@ -358,14 +358,14 @@ def save_output(run_info,output,output_folder):
                         + "-" + file_info["datatype"] 
 
                         + "-" + file_info["timestamp"] 
-                        + "-" + "tier_mu_hpge_dc.lh5")
+                        + "-" + "tier_mu_hpge_mdc.lh5")
     #ls = LH5Store()
-    #ls.write_object(output,"muon_HPGe_dc",output_file_name)
+    #ls.write_object(output,"muon_HPGe_mdc",output_file_name)
     #print(output)
     output.to_hdf((output_folder + output_file_name),"df")
 
 
-def process_delayed_coinc(input, output):
+def process_mu_delayed_coinc(input, output):
     
     muon_tagged_data = get_muon_tagged_data_of_run(run_info,args["muon_tagged_folder"])
 

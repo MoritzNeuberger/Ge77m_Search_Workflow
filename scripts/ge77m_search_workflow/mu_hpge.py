@@ -6,7 +6,7 @@ import awkward as ak
 import utils as ut
 
 
-columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","tp_01_hpge","tp_max_muon","is_in_coincidence_with_mu","is_saturated"]
+#columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","tp_01_hpge","tp_max_muon","is_in_coincidence_with_mu","is_saturated"]
 acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
@@ -28,7 +28,6 @@ def generate_paths_of_different_tiers_from_pht(input_path, fallback_defult="ref-
     if not os.path.exists(paths['tcm']):
         paths['tcm'] = input_path.replace("pht", "tcm").replace("ref-v2.1.0", fallback_defult)
     return paths
-
 
 def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_defult="ref-v2.0.0"):
     """
@@ -59,9 +58,37 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     mask_muon_coinc = pet_data_coinc["muon_offline"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
     selected_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask_muon_coinc]))
 
-    output_data = {}
-    for col in columns:
-        output_data[col] = []
+    output_data = {
+        "geds": {
+            "energy": [],
+            "tp_01": [],
+            "quality": {
+                "is_good_hit": [],
+                "is_saturated": []
+            },
+            "id": {
+                "hit_table": [],
+                "hit_idx": [],
+                "evt_idx": []
+            }
+        },
+        "mu": {
+            "tp_max": [],
+            "id": {
+                "hit_table": [],
+                "hit_idx": [],
+                "evt_idx": []
+            }
+        },
+        "coinc": {
+            "mu_diff": [],
+            "is_in_coincidence_with_mu": []
+        }
+    }
+
+
+    #for col in columns:
+    #    output_data[col] = []
         
     for i in range(len(selected_idx)):
 
@@ -87,20 +114,25 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             evt_idx = tcm_idx[hpge_idx]
             evt_id = np.where(pet_data_geds[evt_idx]["hit_idx"] == hpge_idx)[0][0]
 
-            output_data["hit_table"].append(tcm_id[hpge_idx])
-            output_data["hit_idx"].append(hpge_idx)
-            output_data["evt_idx"].append(tcm_idx[hpge_idx])
-            output_data["timestamp"].append(data_pht_hpge["timestamp"][0])
-            output_data["cuspEmax_ctc_cal"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
-            output_data["is_good_hit"].append(pet_data_geds[evt_idx]["is_good_hit"][evt_id])
-            output_data["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_max"])[0])
-            output_data["tp_01_hpge"].append(data_psp_hpge["tp_01"])
-            output_data["tp_max_muon"].append(data_psp_muon["tp_max"][0])
-            output_data["is_in_coincidence_with_mu"].append((acc_range[0] < output["mu_diff"][-1] < acc_range[1]))
-            output_data["is_saturated"].append(data_pht_hpge["is_saturated"][0])
+            output_data["geds"]["energy"].append(data_pht_hpge["trapEmax_ctc_cal"][0])
+            output_data["geds"]["tp_01"].append(data_psp_hpge["tp_01"][0])
+            output_data["geds"]["quality"]["is_good_hit"].append(pet_data_geds[evt_idx]["is_good_hit"][evt_id])
+            output_data["geds"]["quality"]["is_saturated"].append(data_pht_hpge["is_saturated"][0])
+            output_data["geds"]["id"]["hit_table"].append(tcm_id[hpge_idx])
+            output_data["geds"]["id"]["hit_idx"].append(hpge_idx)
+            output_data["geds"]["id"]["evt_idx"].append(tcm_idx[hpge_idx])
 
-    output_data_lgdo = {col: types.Array(output_data[col]) for col in columns}
-    output_lh5 = types.Table(col_dict=output_data_lgdo)
+            output_data["mu"]["tp_max"].append(data_psp_muon["tp_max"][0])
+            output_data["mu"]["id"]["hit_table"].append(tcm_id[muon_idx])
+            output_data["mu"]["id"]["hit_idx"].append(muon_idx)
+            output_data["mu"]["id"]["evt_idx"].append(tcm_idx[muon_idx])
+
+            output_data["coinc"]["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_max"])[0])
+            output_data["coinc"]["is_in_coincidence_with_mu"].append(
+                (acc_range[0] < output_data["coinc"]["mu_diff"][-1] < acc_range[1])
+            )
+
+    output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
     write(output_lh5, name="mgc", lh5_file=output)
 
 

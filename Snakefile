@@ -10,7 +10,7 @@ input_root = config["input_root"].format(default_ref_version=config["default_ref
 
 # include all rule files
 include: "rules/mu_hpge_coinc.smk"
-include: "rules/delayed_coinc.smk"
+include: "rules/mu_delayed_coinc.smk"
 include: "rules/make_skm.smk"
 
 # discover all initial inputs
@@ -33,7 +33,7 @@ for lvl1 in os.listdir(input_root):
 all_inputs = []
 
 mgc_outputs = []
-dc_outputs = []
+mdc_outputs = []
 
 for d in initial:
     mgc_outputs.append(
@@ -45,13 +45,13 @@ for d in initial:
             d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
         )
     )
-    dc_outputs.append(
+    mdc_outputs.append(
         os.path.join(
             config["out_root"],
             config["workflow"][1],
             d["lvl1"],
             d["lvl2"],
-            d["base"].replace("tier_pht", "tier_dc") + ".lh5"
+            d["base"].replace("tier_pht", "tier_mdc") + ".lh5"
         )
     )
 

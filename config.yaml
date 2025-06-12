@@ -17,5 +17,5 @@ target_file: ""  # Leave empty for all files, or set to a specific filename (wit
 # List of rules in execution order:
 workflow:
   - mu_hpge_coinc
-  - delayed_coinc
+  - mu_delayed_coinc
   - make_skm
