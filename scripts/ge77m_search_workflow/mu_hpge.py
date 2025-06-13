@@ -25,7 +25,7 @@ def get_pht_hpge(store, paths, selected_id, selected_idx):
 def get_psp_hpge(store, paths, selected_id, selected_idx):
     return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx]).view_as("ak")
 
-def get_psp_muon(store, paths, selected_id, selected_idx):
+def get_psp_muon(store, paths, selected_id, selected_idx, chmap):
     return store.read("ch{}/dsp/".format(chmap.map("name")["MUON01"].daq.rawid), paths["psp"], idx=[selected_idx]).view_as("ak")
 
 def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger):
@@ -66,7 +66,7 @@ def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_g
         return
     
     data_psp_hpge = get_psp_hpge(store, paths, selected_id, selected_idx)
-    data_psp_muon = get_psp_muon(store, paths, selected_id, selected_idx)
+    data_psp_muon = get_psp_muon(store, paths, selected_id, selected_idx, chmap)
 
     fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger)
 
