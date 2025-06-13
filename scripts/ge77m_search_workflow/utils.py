@@ -41,7 +41,7 @@ def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, 
     if not os.path.exists(paths['tcm']):
         paths['tcm'] = input_path.replace("pht", "tcm").replace(default_ref_version, fallback_ref_version)
     if raw_path is not None:
-        paths['raw'] = raw_path + "/" + "/".join(input_path.rsplit("/",4)[1:])
+        paths['raw'] = (raw_path + "/" + "/".join(input_path.rsplit("/",4)[1:])).replace("pht", "raw")
     return paths
 
 #/dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-v2.1.0/generated/tier/pht/phy/p03/r001/l200-p03-r001-phy-20230320T025504Z-tier_pht.lh5
