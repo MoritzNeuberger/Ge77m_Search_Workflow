@@ -10,8 +10,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import utils as ut
 
-
-#columns = ["hit_table", "hit_idx", "evt_idx", "timestamp", "cuspEmax_ctc_cal", "is_good_hit","mu_diff","tp_01_hpge","tp_max_muon","is_in_coincidence_with_mu","is_saturated"]
 acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
@@ -131,6 +129,8 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
       
     for i in range(len(selected_idx)):
         process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, output_data)
+
+    print(output_data)
 
     output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
     write(output_lh5, name="mgc", lh5_file=str(output))
