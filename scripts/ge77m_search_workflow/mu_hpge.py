@@ -36,8 +36,11 @@ def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, dat
     output_data["geds"]["quality"]["is_bb_like"].append(pet_data_geds[selected_idx]["quality"]["is_bb_like"])
     output_data["geds"]["quality"]["is_good_channel"].append(pet_data_geds[selected_idx]["quality"]["is_good_channel"][evt_id])
     output_data["geds"]["quality"]["is_saturated"].append(data_pht_hpge["is_saturated"][0])
-    quality_idx = np.where(selected_id[i] == pet_data_geds[selected_idx]["quality"]["is_not_bb_like"]["rawid"])[0][0]
-    output_data["geds"]["quality"]["channel_is_positive_polarity"].append(pet_data_geds[selected_idx]["quality"]["is_not_bb_like"]["is_pos_polarity_bits"][quality_idx] == 127)
+    if selected_id in pet_data_geds[selected_idx]["quality"]["is_not_bb_like"]["rawid"]:
+        quality_idx = np.where(selected_id == pet_data_geds[selected_idx]["quality"]["is_not_bb_like"]["rawid"])[0][0]
+        output_data["geds"]["quality"]["channel_is_positive_polarity"].append(pet_data_geds[selected_idx]["quality"]["is_not_bb_like"]["is_pos_polarity_bits"][quality_idx] == 127)
+    else:
+        output_data["geds"]["quality"]["channel_is_positive_polarity"].append(True)
     output_data["geds"]["id"]["hit_table"].append(selected_id)
     output_data["geds"]["id"]["hit_idx"].append(selected_idx)
 
