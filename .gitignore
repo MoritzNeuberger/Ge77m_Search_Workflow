@@ -48,3 +48,6 @@ venv.bak/
 
 # also .conda
 *.conda
+
+# ignore gen
+*gen
