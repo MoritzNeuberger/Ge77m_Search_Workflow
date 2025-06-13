@@ -22,13 +22,13 @@ def get_pet_data(store, paths):
     return pet_data_geds, pet_data_coinc, pet_data_trigger
 
 def get_pht_hpge(store, paths, selected_id, selected_idx):
-    return store.read("ch{}/hit/".format(selected_id), paths["pht"], idx=[selected_idx])[0].view_as("ak")
+    return store.read("ch{}/hit/".format(selected_id), paths["pht"], idx=[selected_idx]).view_as("ak")
 
 def get_psp_hpge(store, paths, selected_id, selected_idx):
-    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx])[0].view_as("ak")
+    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx]).view_as("ak")
 
 def get_psp_muon(store, paths, selected_id, selected_idx):
-    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx])[0].view_as("ak")
+    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx]).view_as("ak")
 
 def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger):
     evt_id = np.where(pet_data_geds["rawid"][selected_idx] == selected_id)[0][0]
