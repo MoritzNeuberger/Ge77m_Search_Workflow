@@ -62,7 +62,7 @@ def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_g
         return
 
     data_pht_hpge = get_pht_hpge(store, paths, selected_id, selected_idx)
-    if data_pht_hpge["cuspEmax_ctc_cal"] < min_cuspEmax:
+    if data_pht_hpge["cuspEmax_ctc_cal"] < min_cuspEmax or np.isnan(data_pht_hpge["cuspEmax_ctc_cal"]):
         return
     
     data_psp_hpge = get_psp_hpge(store, paths, selected_id, selected_idx)
