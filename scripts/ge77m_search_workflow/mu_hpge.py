@@ -95,6 +95,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     
     timestamp = ut.extract_timestamp_raw(paths["pet"])
     chmap = ut.generate_channel_map(timestamp, metadata=metadata)
+    data_streams_hpge = ut.select_datastreams(chmap, "HPGE")
 
     selected_idx, selected_id = make_selection(pet_data_coinc, pet_data_geds)
 
@@ -132,6 +133,9 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
 
       
     for i in range(len(selected_idx)):
+        if selected_id[i] not in data_streams_hpge:
+            print(f"Warning: Selected ID {selected_id[i]} not found in HPGe data streams. Skipping this entry.")
+            continue
         process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, output_data)
 
     output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
