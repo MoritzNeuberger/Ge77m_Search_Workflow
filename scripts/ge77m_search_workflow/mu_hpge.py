@@ -15,6 +15,12 @@ import utils as ut
 acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
+def get_pet_data(store, paths):
+    pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
+    pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
+    pet_data_trigger = store.read("/evt/trigger/", paths["pet"])[0].view_as("ak")
+    return pet_data_geds, pet_data_coinc, pet_data_trigger
+
 def get_pht_hpge(store, paths, selected_id, selected_idx):
     return store.read("ch{}/hit/".format(selected_id), paths["pht"], idx=[selected_idx])[0].view_as("ak")
 
@@ -62,6 +68,11 @@ def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_g
 
     fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger)
 
+def make_selection(pet_data_coinc):
+    mask = pet_data_coinc["muon"] & ~pet_data_coinc["puls"]
+    selection_idx = ak.to_numpy(ak.flatten(pet_data_coinc["hit_idx"][mask]))
+    selection_id = ak.to_numpy(ak.flatten(pet_data_coinc["rawid"][mask]))
+    return selection_idx, selection_id
 
 def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, raw_path=None):
     """
@@ -78,17 +89,12 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     paths = ut.generate_paths_of_different_tiers_from_pht(str(input),default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version, raw_path=raw_path)
 
     store = LH5Store()
-    pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
-    pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
-    pet_data_trigger = store.read("/evt/trigger/", paths["pet"])[0].view_as("ak")
+    pet_data_geds, pet_data_coinc, pet_data_trigger = get_pet_data(store, paths)
     
     timestamp = ut.extract_timestamp_raw(paths["pet"])
     chmap = ut.generate_channel_map(timestamp, metadata=metadata)
 
-    mask_muon_coinc = pet_data_coinc["muon"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
-    selected_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask_muon_coinc]))
-    selected_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask_muon_coinc]))
-
+    selected_idx, selected_id = make_selection(pet_data_coinc)
 
     output_data = {
         "geds": {
