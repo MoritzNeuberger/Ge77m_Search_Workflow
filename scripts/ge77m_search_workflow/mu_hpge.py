@@ -15,6 +15,52 @@ import utils as ut
 acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
+def get_pht_hpge(store, paths, selected_id, selected_idx):
+    return store.read("ch{}/hit/".format(selected_id), paths["pht"], idx=[selected_idx])[0].view_as("ak")
+
+def get_psp_hpge(store, paths, selected_id, selected_idx):
+    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx])[0].view_as("ak")
+
+def get_psp_muon(store, paths, selected_id, selected_idx):
+    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx])[0].view_as("ak")
+
+def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger):
+    evt_id = np.where(pet_data_geds["rawid"][selected_idx] == selected_id)[0][0]
+
+    output_data["geds"]["energy"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
+    output_data["geds"]["tp_01"].append(data_psp_hpge["tp_01"][0])
+    output_data["geds"]["quality"]["is_bb_like"].append(pet_data_geds[selected_idx]["quality"]["is_bb_like"])
+    output_data["geds"]["quality"]["is_good_channel"].append(pet_data_geds[selected_idx]["quality"]["is_good_channel"][evt_id])
+    output_data["geds"]["quality"]["is_saturated"].append(data_pht_hpge["is_saturated"][0])
+    output_data["geds"]["quality"]["channel_is_positive_polarity"].append(pet_data_geds[selected_idx]["quality"]["is_not_bb_like"]["is_pos_polarity_bits"] == 127)
+    output_data["geds"]["id"]["hit_table"].append(selected_id)
+    output_data["geds"]["id"]["hit_idx"].append(selected_idx)
+
+    output_data["mu"]["tp_01"].append(data_psp_muon["tp_01"][0])
+    output_data["mu"]["id"]["hit_table"].append(chmap.map("name")["MUON01"].daq.rawid)
+    output_data["mu"]["id"]["hit_idx"].append(selected_idx)
+
+    output_data["coinc"]["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_01"])[0])
+    output_data["coinc"]["is_in_coincidence_with_mu"].append(
+        (acc_range[0] < output_data["coinc"]["mu_diff"][-1] < acc_range[1])
+    )
+    output_data["coinc"]["id"]["evt_idx"].append(selected_idx)
+    output_data["coinc"]["id"]["timestamp"].append(pet_data_trigger[selected_idx]["timestamp"])
+
+
+def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_geds, pet_data_trigger, output_data):
+    if not selected_id in pet_data_geds["rawid"][selected_idx]:
+        print(f"Warning: Selected ID {selected_id} not found in pet_data_geds at index {selected_idx}. Skipping this entry.")
+        return
+
+    data_pht_hpge = get_pht_hpge(store, paths, selected_id, selected_idx)
+    if data_pht_hpge["cuspEmax_ctc_cal"] < min_cuspEmax:
+        return
+    
+    data_psp_hpge = get_psp_hpge(store, paths, selected_id, selected_idx)
+    data_psp_muon = get_psp_muon(store, paths, selected_id, selected_idx)
+
+    fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger)
 
 
 def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, raw_path=None):
@@ -38,7 +84,6 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     
     timestamp = ut.extract_timestamp_raw(paths["pet"])
     chmap = ut.generate_channel_map(timestamp, metadata=metadata)
-    data_streams_hpge = ut.select_datastreams(chmap, "HPGE")
 
     mask_muon_coinc = pet_data_coinc["muon"] & ~pet_data_coinc["puls"]  # & pet_data["geds"]["is_good_hit"]
     selected_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask_muon_coinc]))
@@ -77,59 +122,9 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
         }
     }
 
-
-    #for col in columns:
-    #    output_data[col] = []
       
     for i in range(len(selected_idx)):
-
-        if not selected_id[i] in data_streams_hpge:
-            continue
-        
-        data_pht_hpge = store.read("ch{}/hit/".format(selected_id[i]),
-                    paths["pht"],
-                    idx=[selected_idx[i]])[0].view_as("ak")
-
-        print(data_pht_hpge["cuspEmax_ctc_cal"])
-
-        if data_pht_hpge["cuspEmax_ctc_cal"] > min_cuspEmax:
-
-            data_psp_hpge = store.read("ch{}/dsp/".format(selected_id[i]),
-                        paths["psp"],
-                        idx=[selected_idx[i]])[0].view_as("ak")
-
-            data_psp_muon = store.read("ch{}/dsp/".format(selected_id[i]),
-                        paths["psp"],
-                        idx=[selected_idx[i]])[0].view_as("ak")
-
-            evt_idx = selected_idx[i]
-
-            if not selected_id[i] in pet_data_geds["rawid"][evt_idx]:
-                continue
-
-            print(data_psp_muon.fields)
-            
-            evt_id = np.where(pet_data_geds["rawid"][evt_idx] == selected_id[i])[0][0]
-
-            output_data["geds"]["energy"].append(data_pht_hpge["cuspEmax_ctc_cal"][0])
-            output_data["geds"]["tp_01"].append(data_psp_hpge["tp_01"][0])
-            output_data["geds"]["quality"]["is_bb_like"].append(pet_data_geds[evt_idx]["quality"]["is_bb_like"])
-            output_data["geds"]["quality"]["is_good_channel"].append(pet_data_geds[evt_idx]["quality"]["is_good_channel"][evt_id])
-            output_data["geds"]["quality"]["is_saturated"].append(data_pht_hpge["is_saturated"][0])
-            output_data["geds"]["quality"]["channel_is_positive_polarity"].append(pet_data_geds[evt_idx]["quality"]["is_not_bb_like"]["is_pos_polarity_bits"] == 127)
-            output_data["geds"]["id"]["hit_table"].append(selected_id[i])
-            output_data["geds"]["id"]["hit_idx"].append(selected_idx[i])
-
-            output_data["mu"]["tp_01"].append(data_psp_muon["tp_01"][0])
-            output_data["mu"]["id"]["hit_table"].append(chmap.map("name")["MUON01"].daq.rawid)
-            output_data["mu"]["id"]["hit_idx"].append(selected_idx[i])
-
-            output_data["coinc"]["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_01"])[0])
-            output_data["coinc"]["is_in_coincidence_with_mu"].append(
-                (acc_range[0] < output_data["coinc"]["mu_diff"][-1] < acc_range[1])
-            )
-            output_data["coinc"]["id"]["evt_idx"].append(selected_idx[i])
-            output_data["coinc"]["id"]["timestamp"].append(pet_data_trigger[evt_idx]["timestamp"])
+        process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, output_data)
 
     output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
     write(output_lh5, name="mgc", lh5_file=str(output))
