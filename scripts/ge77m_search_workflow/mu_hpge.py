@@ -134,8 +134,6 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     for i in range(len(selected_idx)):
         process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, output_data)
 
-    print(output_data)
-
     output_lh5 = types.Table(col_dict=ut.dict_to_lgdo(output_data))
     write(output_lh5, name="mgc", lh5_file=str(output))
 
