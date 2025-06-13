@@ -42,3 +42,9 @@ venv.bak/
 
 #Snakemake
 .snakemake/
+
+# ignore dist-info files
+*.dist-info/
+
+# also .conda
+*.conda
