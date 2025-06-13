@@ -16,10 +16,9 @@ acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
 def get_pet_data(store, paths):
-    print(paths["pet"])
-    pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
-    pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
-    pet_data_trigger = store.read("/evt/trigger/", paths["pet"])[0].view_as("ak")
+    pet_data_geds = store.read("/evt/geds/", paths["pet"]).view_as("ak")
+    pet_data_coinc = store.read("/evt/coincident/", paths["pet"]).view_as("ak")
+    pet_data_trigger = store.read("/evt/trigger/", paths["pet"]).view_as("ak")
     return pet_data_geds, pet_data_coinc, pet_data_trigger
 
 def get_pht_hpge(store, paths, selected_id, selected_idx):
