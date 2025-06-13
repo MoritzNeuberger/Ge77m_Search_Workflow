@@ -11,6 +11,7 @@ metadata: /global/cfs/cdirs/m2676/users/neuberger/Ge77m_dc_search/v04/legend-met
 
 # Where to look for the initial .lh5 files:
 input_root: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-{default_ref_version}/generated/tier/pht/phy
+input_raw: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-raw/generated/tier/raw
 
 ignore_periods: 
   - "p10"
