@@ -16,6 +16,7 @@ acc_range = [-2000, 5000]
 min_cuspEmax = 25
 
 def get_pet_data(store, paths):
+    print(paths["pet"])
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
     pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
     pet_data_trigger = store.read("/evt/trigger/", paths["pet"])[0].view_as("ak")
