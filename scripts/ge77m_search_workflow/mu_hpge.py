@@ -68,10 +68,10 @@ def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_g
 
     fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger)
 
-def make_selection(pet_data_coinc):
+def make_selection(pet_data_coinc,pet_data_geds):
     mask = pet_data_coinc["muon"] & ~pet_data_coinc["puls"]
-    selection_idx = ak.to_numpy(ak.flatten(pet_data_coinc["hit_idx"][mask]))
-    selection_id = ak.to_numpy(ak.flatten(pet_data_coinc["rawid"][mask]))
+    selection_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask]))
+    selection_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask]))
     return selection_idx, selection_id
 
 def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, raw_path=None):
@@ -94,7 +94,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     timestamp = ut.extract_timestamp_raw(paths["pet"])
     chmap = ut.generate_channel_map(timestamp, metadata=metadata)
 
-    selected_idx, selected_id = make_selection(pet_data_coinc)
+    selected_idx, selected_id = make_selection(pet_data_coinc, pet_data_geds)
 
     output_data = {
         "geds": {
