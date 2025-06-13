@@ -26,7 +26,7 @@ def get_psp_hpge(store, paths, selected_id, selected_idx):
     return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx]).view_as("ak")
 
 def get_psp_muon(store, paths, selected_id, selected_idx):
-    return store.read("ch{}/dsp/".format(selected_id), paths["psp"], idx=[selected_idx]).view_as("ak")
+    return store.read("ch{}/dsp/".format(chmap.map("name")["MUON01"].daq.rawid), paths["psp"], idx=[selected_idx]).view_as("ak")
 
 def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger):
     evt_id = np.where(pet_data_geds["rawid"][selected_idx] == selected_id)[0][0]
@@ -44,11 +44,11 @@ def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, dat
     output_data["geds"]["id"]["hit_table"].append(selected_id)
     output_data["geds"]["id"]["hit_idx"].append(selected_idx)
 
-    output_data["mu"]["tp_01"].append(data_psp_muon["tp_01"][0])
+    output_data["mu"]["tp_max"].append(data_psp_muon["tp_max"][0])
     output_data["mu"]["id"]["hit_table"].append(chmap.map("name")["MUON01"].daq.rawid)
     output_data["mu"]["id"]["hit_idx"].append(selected_idx)
 
-    output_data["coinc"]["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_01"])[0])
+    output_data["coinc"]["mu_diff"].append((data_psp_hpge["tp_01"] - data_psp_muon["tp_max"][0]))
     output_data["coinc"]["is_in_coincidence_with_mu"].append(
         (acc_range[0] < output_data["coinc"]["mu_diff"][-1] < acc_range[1])
     )
@@ -115,7 +115,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             }
         },
         "mu": {
-            "tp_01": [],
+            "tp_max": [],
             "id": {
                 "hit_table": [],
                 "hit_idx": [],
