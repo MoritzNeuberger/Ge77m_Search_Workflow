@@ -22,7 +22,7 @@ def dict_to_lgdo(in_dict):
             tables[key] = types.Array(value)
     return types.Table(tables)
 
-def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, fallback_ref_version):
+def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, fallback_ref_version, raw_path=None):
     """
     Generate paths for different tiers based on the input path.
     Args:
@@ -40,7 +40,11 @@ def generate_paths_of_different_tiers_from_pht(input_path, default_ref_version, 
     paths['tcm'] = input_path.replace("pht", "tcm")
     if not os.path.exists(paths['tcm']):
         paths['tcm'] = input_path.replace("pht", "tcm").replace(default_ref_version, fallback_ref_version)
+    if raw_path is not None:
+        paths['raw'] = raw_path + "/".join(input_path.rsplit("/",4)[1:])
     return paths
+
+#/dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-v2.1.0/generated/tier/pht/phy/p03/r001/l200-p03-r001-phy-20230320T025504Z-tier_pht.lh5
 
 
 from datetime import datetime 

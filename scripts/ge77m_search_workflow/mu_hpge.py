@@ -17,7 +17,7 @@ min_cuspEmax = 25
 
 
 
-def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None):
+def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, raw_path=None):
     """
     Process coincidences between muon channel and HPGe channel.
 
@@ -29,8 +29,8 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     between muon and HPGe channels, and writes the results to the output files.
     
     """
-    paths = ut.generate_paths_of_different_tiers_from_pht(str(input),default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version)
-    
+    paths = ut.generate_paths_of_different_tiers_from_pht(str(input),default_ref_version=default_ref_version,fallback_ref_version=fallback_ref_version, raw_path=raw_path)
+
     store = LH5Store()
     pet_data_geds = store.read("/evt/geds/", paths["pet"])[0].view_as("ak")
     pet_data_coinc = store.read("/evt/coincident/", paths["pet"])[0].view_as("ak")
