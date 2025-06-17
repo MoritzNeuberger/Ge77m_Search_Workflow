@@ -71,6 +71,36 @@ def extract_timestamp_raw(filename):
         # Handle cases where the timestamp is not found
         return None
     
+import glob
+import numpy as np
+
+def generate_timestamp_to_path_dict(input_path):
+    input_paths = glob.glob(input_path + "/*/*/*.lh5")
+    timestamps = []
+    paths = []
+    for path in input_paths:
+        timestamps.append(extract_timestamp(path).timestamp())
+        paths.append(path)
+    arg_sort_mask = np.argsort(timestamps)
+    sorted_timestamps = np.array(timestamps)[arg_sort_mask]
+    sorted_paths = np.array(paths)[arg_sort_mask]
+    return dict(zip(sorted_timestamps, sorted_paths))
+
+def find_file_from_closest_larger_timestamp(timestamp, timestamp_path_dict):
+    """
+    Find the file with the closest larger timestamp in the timestamp_path_dict.
+    
+    Args:
+        timestamp (float): The timestamp to compare against.
+        timestamp_path_dict (dict): A dictionary mapping timestamps to file paths.
+        
+    Returns:
+        str: The path of the file with the closest larger timestamp, or None if not found.
+    """
+    for ts in sorted(timestamp_path_dict.keys()):
+        if ts > timestamp:
+            return timestamp_path_dict[ts]
+    return None
 
 from pygama.flow import DataLoader
 from legendmeta import LegendMetadata

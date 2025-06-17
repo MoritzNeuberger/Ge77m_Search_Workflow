@@ -26,7 +26,13 @@ rule delayed_coinc:
             lvl2=wc["lvl2"],
             base=wc["base"].replace("tier_mdc", "tier_pht")
         )),
-        barrier="/tmp/mgc_all.done"
+        barrier="/tmp/mgc_all.done",
+        waveform_block="/tmp/mgc_plots_all.done",
+        mgc_skm= os.path.join(
+            config["out_root"],
+            config["workflow"][0],
+            "skm_mgc.lh5"
+        )
     output:
         # e.g. gen/mu_delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_mdc.lh5
         os.path.join(

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --qos=shared
-#SBATCH --time=08:00:00
+#SBATCH --time=20:00:00
 #SBATCH --constraint=cpu
 #SBATCH --account=m2676
 #SBATCH --export=HDF5_USE_FILE_LOCKING=FALSE
@@ -11,7 +11,7 @@
 #SBATCH --output=/global/cfs/cdirs/m2676/users/neuberger/Ge77m_dc_search/v04/Ge77m_Search_Workflow/.log/perlmutter-%j.txt
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10
-#SBATCH --mem=30GB
+#SBATCH --mem=80GB
 
 echo "Job Start:"
 date

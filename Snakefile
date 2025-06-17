@@ -10,8 +10,12 @@ input_root = config["input_root"].format(default_ref_version=config["default_ref
 
 # include all rule files
 include: "rules/mu_hpge_coinc.smk"
+include: "rules/make_mgc_skm.smk"
 include: "rules/mu_delayed_coinc.smk"
 include: "rules/make_skm.smk"
+include: "rules/draw_mu_diff_vs_energy.smk"
+include: "rules/draw_mgc_candidates.smk"
+include: "rules/check_muon_tagging.smk"
 
 # discover all initial inputs
 # They live under config["input_root"]/*/*/*.lh5
@@ -35,6 +39,7 @@ for lvl1 in os.listdir(input_root):
 # Collect all output files in a single list
 all_inputs = []
 
+muon_tagging = ["gen/muon_tagging_stats.txt"]
 mgc_outputs = []
 mdc_outputs = []
 
@@ -58,7 +63,24 @@ for d in initial:
         )
     )
 
-all_inputs = sorted(set(mgc_outputs + mdc_outputs))  # Remove duplicates and sort
+skm_mgc_output = [
+    os.path.join(
+        config["out_root"],
+        config["workflow"][0],
+        "skm_mgc.lh5"
+    )
+]
+
+waveform_block = "/tmp/mgc_plots_all.done"
+
+draw_plots = [
+    "gen/figs/mu_diff_vs_energy.pdf",
+    waveform_block
+]
+
+os.makedirs(os.path.dirname(draw_plots[0]), exist_ok=True)
+
+all_inputs = sorted(set(muon_tagging + mgc_outputs + skm_mgc_output + draw_plots + mdc_outputs))  # Remove duplicates and sort
 
 # rule all: build everything in the order given by config["workflow"]
 rule all:

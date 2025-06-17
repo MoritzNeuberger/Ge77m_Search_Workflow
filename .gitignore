@@ -55,3 +55,4 @@ venv.bak/
 #ignore .log
 *.log
 *tmp*
+*.sh
