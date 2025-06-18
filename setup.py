@@ -12,7 +12,8 @@ setup(
         "snakemake",
         "pygama",
         "legend-pydataobj",
-        "pylegendmeta"
+        "pylegendmeta",
+        "PyPDF2"
         # (empty, since we list deps in your envs/*.yaml)
     ],
 )

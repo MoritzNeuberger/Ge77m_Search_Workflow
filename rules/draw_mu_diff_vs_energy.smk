@@ -19,7 +19,7 @@ rule draw_mu_diff_vs_energy:
 
         # narrow plot
 
-        mask = tmp["mu"]["coinc_flags"]["mu"]
+        mask = tmp["mu"]["coinc_flags"]["muon"]
 
         plt.hist2d(np.array(tmp["coinc"]["mu_diff"][mask]), np.array(tmp["geds"]["energy"][mask]), 
            bins=[np.linspace(-5000,10000, 101), 10**np.linspace(1.1,4,101)], 

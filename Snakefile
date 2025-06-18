@@ -16,6 +16,7 @@ include: "rules/make_skm.smk"
 include: "rules/draw_mu_diff_vs_energy.smk"
 include: "rules/draw_mgc_candidates.smk"
 include: "rules/check_muon_tagging.smk"
+include: "rules/draw_mgc_rate.smk"
 
 # discover all initial inputs
 # They live under config["input_root"]/*/*/*.lh5
@@ -53,15 +54,15 @@ for d in initial:
             d["base"].replace("tier_pht", "tier_mgc") + ".lh5"
         )
     )
-    mdc_outputs.append(
-        os.path.join(
-            config["out_root"],
-            config["workflow"][1],
-            d["lvl1"],
-            d["lvl2"],
-            d["base"].replace("tier_pht", "tier_mdc") + ".lh5"
-        )
-    )
+    #mdc_outputs.append(
+    #    os.path.join(
+    #        config["out_root"],
+    #        config["workflow"][1],
+    #        d["lvl1"],
+    #        d["lvl2"],
+    #        d["base"].replace("tier_pht", "tier_mdc") + ".lh5"
+    #    )
+    #)
 
 skm_mgc_output = [
     os.path.join(
@@ -75,6 +76,7 @@ waveform_block = "/tmp/mgc_plots_all.done"
 
 draw_plots = [
     "gen/figs/mu_diff_vs_energy.pdf",
+    "gen/figs/mgc_rate.pdf",
     waveform_block
 ]
 

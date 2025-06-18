@@ -4,8 +4,6 @@ from lgdo.lh5 import LH5Store, write
 import lgdo.types as types 
 import awkward as ak
 
-from datetime import datetime
-
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

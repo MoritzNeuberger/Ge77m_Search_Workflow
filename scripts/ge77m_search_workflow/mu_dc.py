@@ -107,6 +107,50 @@ def generate_hpge_data(pht_file_name, default_ref_version, fallback_ref_version,
     return ut.dict_to_lgdo(output_data)
 
 
+def enforce_type(array):
+    
+    dT_type = ak.types.NumpyType("float64")  # dT
+
+    prompt_type = ak.Array(array)["prompt"].type
+
+    delayed_type = ak.types.RecordType(
+        [
+            ak.types.NumpyType("float64"),  # energy
+            ak.types.NumpyType("float64"),  # tp_01
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("bool"),    # quality_is_bb_like
+                    ak.types.NumpyType("bool"),    # psd_is_good
+                    ak.types.NumpyType("bool"),    # psd_is_bb_like
+                    ak.types.NumpyType("bool"),    # is_good_hit
+                    ak.types.NumpyType("bool"),    # is_saturated
+                ],
+                ["quality_is_bb_like", "psd_is_good", "psd_is_bb_like", "is_good_hit", "is_saturated"]
+            ),  # quality
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("int64"),   # hit_table
+                    ak.types.NumpyType("int64"),   # hit_idx
+                    ak.types.NumpyType("int64"),   # evt_idx
+                    ak.types.NumpyType("float64"), # timestamp
+                ],
+                ["hit_table", "hit_idx", "evt_idx", "timestamp"]
+            ),  # id
+        ],
+        ["energy", "tp_01", "quality", "id"]
+    )
+
+    output_type = ak.types.RecordType(
+        [
+            dT_type,
+            prompt_type,
+            delayed_type,
+        ],
+        ["dT", "prompt", "delayed"]
+    )
+
+    return ak.enforce_type(array, output_type)
+
 
 def find_delayed_coincicence_candidates(hpge_data, mgc_data, max_delta_sec):
     # Merge the two dataframes on the "hit_table" column
@@ -135,7 +179,7 @@ def find_delayed_coincicence_candidates(hpge_data, mgc_data, max_delta_sec):
 
 
 def save_output(mdc_data,output):
-    lh5.write(mdc_data, name="mdc", lh5_file=str(output))
+    lh5.write(enforce_type(mdc_data), name="mdc", lh5_file=str(output))
 
 
 def process_mu_delayed_coinc(input, output,default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", max_delta_sec=100*53.7, metadata=None):
