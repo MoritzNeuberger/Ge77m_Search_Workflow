@@ -16,10 +16,9 @@ rule delayed_coinc:
         base=".*tier_mdc.*"
 
     input:
-        mgc_files=(lambda wc: config["out_root"] + "/mu_hpge_coinc/{lvl1}/{lvl2}/{base}.lh5".format(
+        mgc_skm_file=(lambda wc: config["out_root"] + "/mu_hpge_coinc/{lvl1}/skm_mgc_{lvl2}.lh5".format(
             lvl1=wc["lvl1"],
-            lvl2=wc["lvl2"],
-            base=wc["base"].replace("tier_mdc", "tier_mgc")
+            lvl2=wc["lvl2"]
         )),
         pht_files=(lambda wc: input_root + "/{lvl1}/{lvl2}/{base}.lh5".format(
             lvl1=wc["lvl1"],
@@ -27,12 +26,7 @@ rule delayed_coinc:
             base=wc["base"].replace("tier_mdc", "tier_pht")
         )),
         barrier="/tmp/mgc_all.done",
-        waveform_block="/tmp/mgc_plots_all.done",
-        mgc_skm= os.path.join(
-            config["out_root"],
-            config["workflow"][0],
-            "skm_mgc.lh5"
-        )
+        waveform_block="/tmp/mgc_plots_all.done"
     output:
         # e.g. gen/mu_delayed_coinc/p03/r000/l200-p03-r000-phy-…-tier_mdc.lh5
         os.path.join(

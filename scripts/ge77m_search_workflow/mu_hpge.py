@@ -99,78 +99,6 @@ def make_selection(pet_data_coinc,pet_data_geds):
     selection_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask]))
     return selection_idx, selection_id
 
-def enforce_type(array):
-    
-    geds_type = ak.types.RecordType(
-        [
-            ak.types.NumpyType("float64"),  # energy
-            ak.types.NumpyType("float64"),  # tp_01
-            ak.types.RecordType(
-                [
-                    ak.types.NumpyType("bool"),  # is_bb_like
-                    ak.types.NumpyType("bool"),  # is_good_channel
-                    ak.types.NumpyType("bool"),  # is_saturated
-                    ak.types.NumpyType("bool"),  # channel_is_positive_polarity
-                ],
-                ["is_bb_like", "is_good_channel", "is_saturated", "channel_is_positive_polarity"]
-            ),  # quality
-            ak.types.RecordType(
-                [
-                    ak.types.NumpyType("int64"),  # hit_table
-                    ak.types.NumpyType("int64"),  # hit_idx
-                ],
-                ["hit_table", "hit_idx"]
-            ),  # id
-        ],
-        ["energy", "tp_01", "quality", "id"]
-    )
-
-    mu_type = ak.types.RecordType(
-        [
-            ak.types.NumpyType("float64"),  # tp_max
-            ak.types.RecordType(
-                [
-                    ak.types.NumpyType("int64"),  # hit_table
-                    ak.types.NumpyType("int64"),  # hit_idx
-                ],
-                ["hit_table", "hit_idx"]
-            ),  # id
-            ak.types.RecordType(
-                [
-                    ak.types.NumpyType("bool"),  # evt_idx
-                    ak.types.NumpyType("bool"),  # timestamp
-                ],
-                ["muon","muon_offline"]
-            )
-        ],
-        ["tp_max", "id", "coinc_flags"]
-    )
-
-    coinc_type = ak.types.RecordType(
-        [
-            ak.types.NumpyType("float64"),  # mu_diff
-            ak.types.NumpyType("bool"),     # is_in_coincidence_with_mu
-            ak.types.RecordType(
-                [
-                    ak.types.NumpyType("int64"),   # evt_idx
-                    ak.types.NumpyType("float64"), # timestamp
-                ],
-                ["evt_idx", "timestamp"]
-            ),  # id
-        ],
-        ["mu_diff", "is_in_coincidence_with_mu", "id"]
-    )
-
-    output_type = ak.types.RecordType(
-        [
-            geds_type,
-            mu_type,
-            coinc_type,
-        ],
-        ["geds", "mu", "coinc"]
-    )
-
-    return ak.enforce_type(array, output_type)
 
 def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, input_raw=None):
     """
@@ -238,7 +166,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             continue
         process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, pet_data_coinc, output_data)
 
-    output_lh5 = types.Table(enforce_type(ak.Array(output_data)))
+    output_lh5 = types.Table(ut.enforce_type_prompt(ak.Array(output_data)))
     write(output_lh5, name="mgc", lh5_file=str(output))
 
 

@@ -19,6 +19,7 @@ def dict_to_lgdo(in_dict):
         if isinstance(value, dict):
             tables[key] = dict_to_lgdo(value)
         else:
+            print(value)
             tables[key] = types.Array(value)
     return types.Table(tables)
 
@@ -134,3 +135,143 @@ def select_datastreams(chmap,stream):
     else:
         datastreams = [chmap.map("name")[stream].daq.rawid]
     return datastreams
+
+
+import awkward as ak
+
+
+def enforce_type_prompt(array):
+    
+    geds_type = ak.types.RecordType(
+        [
+            ak.types.NumpyType("float64"),  # energy
+            ak.types.NumpyType("float64"),  # tp_01
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("bool"),  # is_bb_like
+                    ak.types.NumpyType("bool"),  # is_good_channel
+                    ak.types.NumpyType("bool"),  # is_saturated
+                    ak.types.NumpyType("bool"),  # channel_is_positive_polarity
+                ],
+                ["is_bb_like", "is_good_channel", "is_saturated", "channel_is_positive_polarity"]
+            ),  # quality
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("int64"),  # hit_table
+                    ak.types.NumpyType("int64"),  # hit_idx
+                ],
+                ["hit_table", "hit_idx"]
+            ),  # id
+        ],
+        ["energy", "tp_01", "quality", "id"]
+    )
+
+    mu_type = ak.types.RecordType(
+        [
+            ak.types.NumpyType("float64"),  # tp_max
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("int64"),  # hit_table
+                    ak.types.NumpyType("int64"),  # hit_idx
+                ],
+                ["hit_table", "hit_idx"]
+            ),  # id
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("bool"),  # evt_idx
+                    ak.types.NumpyType("bool"),  # timestamp
+                ],
+                ["muon","muon_offline"]
+            )
+        ],
+        ["tp_max", "id", "coinc_flags"]
+    )
+
+    coinc_type = ak.types.RecordType(
+        [
+            ak.types.NumpyType("float64"),  # mu_diff
+            ak.types.NumpyType("bool"),     # is_in_coincidence_with_mu
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("int64"),   # evt_idx
+                    ak.types.NumpyType("float64"), # timestamp
+                ],
+                ["evt_idx", "timestamp"]
+            ),  # id
+        ],
+        ["mu_diff", "is_in_coincidence_with_mu", "id"]
+    )
+
+    output_type = ak.types.RecordType(
+        [
+            geds_type,
+            mu_type,
+            coinc_type,
+        ],
+        ["geds", "mu", "coinc"]
+    )
+
+    return ak.enforce_type(array, output_type)
+
+
+
+def enforce_type_delayed(array):
+    """
+        "geds": {
+            "energy": [],
+            "quality": {
+                "quality_is_bb_like": [],
+                "psd_is_good": [],
+                "psd_is_bb_like": [],
+            },
+            "id": {
+                "hit_table": [],
+                "hit_idx": [],
+                "timestamp": []
+            }
+        },
+        "coinc":{
+            "multiplicity": [],
+            "spm_coinc": []
+        }
+    """
+
+    
+    delayed_type = ak.types.RecordType([
+
+        ak.types.RecordType(
+            [
+                ak.types.NumpyType("float64"),  # energy
+                ak.types.RecordType(
+                    [
+                        ak.types.NumpyType("bool"),    # quality_is_bb_like
+                        ak.types.NumpyType("bool"),    # psd_is_good
+                        ak.types.NumpyType("bool"),    # psd_is_bb_like
+                    ],
+                    ["quality_is_bb_like", "psd_is_good", "psd_is_bb_like"]
+                ),  # quality
+                ak.types.RecordType(
+                    [
+                        ak.types.NumpyType("int64"),   # hit_table
+                        ak.types.NumpyType("int64"),   # hit_idx
+                        ak.types.NumpyType("float64"), # timestamp
+                    ],
+                    ["hit_table", "hit_idx", "timestamp"]
+                ),  # id
+            ],
+            ["energy", "quality", "id"]
+        ),
+        ak.types.RecordType(
+            [
+                ak.types.NumpyType("int64"),  # multiplicity
+                ak.types.NumpyType("bool"),   # spm_coinc
+            ],
+            ["multiplicity", "spm_coinc"]
+        )  # coinc
+        ],
+        ["geds", "coinc"]
+    )
+
+    print(array, array.fields)
+
+    return ak.enforce_type(array, delayed_type)
