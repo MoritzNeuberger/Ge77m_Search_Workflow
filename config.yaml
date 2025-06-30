@@ -16,6 +16,13 @@ input_raw: /dvs_ro/cfs/cdirs/m2676/users/pertoldi/legend-prodenv/prod-blind/ref-
 ignore_periods: 
   - "p10"
 
+psd_ms_type:
+  - "any"
+  - "low_aoe"
+  - "coax_rt"
+  - ["low_aoe", "coax_rt"]
+  - "bb_like"
+
 # Target file for processing:
 target_file: ""  # Leave empty for all files, or set to a specific filename (without path)
 
@@ -23,4 +30,19 @@ target_file: ""  # Leave empty for all files, or set to a specific filename (wit
 workflow:
   - mu_hpge_coinc
   - mu_delayed_coinc
-  - make_skm
+  - skm
+
+physics_dataset: "0vbb"
+
+
+selection:
+  pre:
+    max_delta_sec: 5370
+    e_min: 25
+  main:
+    off_dataset: [387,5370]
+    on_dataset: [0,387]
+    prompt_e_range: [500,6500]
+    delayed_e_range: 
+      - [1800,2014]
+      - [2064,2700]

@@ -27,5 +27,5 @@ source activate ge77m_snakemake
 
 cd /global/cfs/cdirs/m2676/users/neuberger/Ge77m_dc_search/v04/Ge77m_Search_Workflow
 
-snakemake -c 10 --unlock
-snakemake -c 10
+snakemake -c 1 --unlock
+snakemake -c 20

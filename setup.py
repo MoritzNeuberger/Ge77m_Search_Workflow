@@ -13,7 +13,13 @@ setup(
         "pygama",
         "legend-pydataobj",
         "pylegendmeta",
-        "PyPDF2"
+        "PyPDF2",
+        "h5py",
+        "numba_stats",
+        "scipy",
+        "iminuit",
+        "tqdm",
+        "matplotlib"
         # (empty, since we list deps in your envs/*.yaml)
     ],
 )

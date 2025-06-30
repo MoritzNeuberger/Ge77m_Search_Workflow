@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import utils as ut
 
 acc_range = [-2000, 5000]
-min_cuspEmax = 25
 
 
 def get_pet_data(store, paths):
@@ -78,7 +77,7 @@ def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, dat
     output_data["coinc"]["id"]["timestamp"].append(float(pet_data_trigger[selected_idx]["timestamp"]))
 
 
-def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_geds, pet_data_trigger, pet_data_coinc, output_data):
+def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_geds, pet_data_trigger, pet_data_coinc, output_data, min_cuspEmax):
     if not selected_id in pet_data_geds["rawid"][selected_idx]:
         print(f"Warning: Selected ID {selected_id} not found in pet_data_geds at index {selected_idx}. Skipping this entry.")
         return
@@ -93,14 +92,14 @@ def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_g
     fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger, pet_data_coinc, paths)
 
 def make_selection(pet_data_coinc,pet_data_geds):
-    mask = (pet_data_coinc["muon"] | pet_data_coinc["muon_offline"]) & ~pet_data_coinc["puls"]
+    mask = (pet_data_coinc["muon"] | pet_data_coinc["muon_offline"]) & ~pet_data_coinc["puls"] & ~pet_data_coinc["is_forced"] 
     
     selection_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask]))
     selection_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask]))
     return selection_idx, selection_id
 
 
-def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, input_raw=None):
+def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", metadata=None, input_raw=None, min_cuspEmax=25):
     """
     Process coincidences between muon channel and HPGe channel.
 
@@ -164,7 +163,7 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
     for i in range(len(selected_idx)):
         if selected_id[i] not in data_streams_hpge:
             continue
-        process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, pet_data_coinc, output_data)
+        process_one_entry(selected_id[i], selected_idx[i], store, paths, chmap, pet_data_geds, pet_data_trigger, pet_data_coinc, output_data, min_cuspEmax)
 
     output_lh5 = types.Table(ut.enforce_type_prompt(ak.Array(output_data)))
     write(output_lh5, name="mgc", lh5_file=str(output))

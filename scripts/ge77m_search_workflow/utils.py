@@ -116,22 +116,89 @@ def generate_data_loader(run_info,config_file):
 
 def generate_channel_map(ts,metadata=None):
     if metadata is not None:
-        lmeta = LegendMetadata(metadata)
+        if isinstance(metadata, str):
+            lmeta = LegendMetadata(metadata)
+        elif isinstance(metadata, LegendMetadata):
+            lmeta = metadata
     else:
         lmeta = LegendMetadata()
     chmap = lmeta.channelmap(on=ts)
     return chmap
 
-def get_HPGe_channels(chmap,usability_condition='on',psd_type="low_aoe"):
+def get_HPGe_channels(chmap,usability_condition='on',psd_ms_type=None):
     channels = chmap.map("system", unique=False)["geds"]
     channels = channels.map("analysis.usability", unique=False)[usability_condition]
-    #channels = channels.map("analysis.psd.status."+psd_type, unique=False)['valid']
-    channels = channels.map("daq.rawid", unique=False)
-    return channels
+    if isinstance(psd_ms_type, str):
+        if psd_ms_type == "bb_like":
+            channels = channels.map("daq.rawid", unique=False)  # return all channels
+            output = []
+            for ch in channels:
+                is_bb_like = channels[ch]["analysis"]["psd"]["is_bb_like"].split(" & ")
+                is_valid = True
+                for psd_type in is_bb_like:
+                    if psd_type == "missing" or channels[ch]["analysis"]["psd"]["status"][psd_type] != "valid":
+                        is_valid = False
+                        break
+                if is_valid:
+                    output.append(channels[ch]["daq"]["rawid"])
+            return output
+        else:
+            try:
+                channels = channels.map("analysis.psd.status."+psd_ms_type, unique=False)
+                if "valid" in channels:
+                    channels = channels['valid']
+                else:
+                    return None
+            except KeyError:
+                print(channels)
+                raise
+            channels = channels.map("daq.rawid", unique=False) 
+            return channels
+    elif isinstance(psd_ms_type, list):
+        tmp_channels =  []
+        for psd_type in psd_ms_type:
+            try:
+                tmp = channels.map("analysis.psd.status."+psd_type, unique=False)
+                if "valid" in tmp:
+                    tmp = tmp["valid"]
+                    tmp = tmp.map("daq.rawid", unique=False)
+                    tmp_channels.append(tmp)
+            except KeyError:
+                print(channels)
+                raise
+        return tmp_channels
+    else:
+        channels = channels.map("daq.rawid", unique=False)
+        return channels
 
-def select_datastreams(chmap,stream):
+def select_datastreams(chmap,stream,psd_ms_type=None):
+
+    psd_ms_type_options = ["low_aoe", "coax_rt", "bb_like"]
+
+    if psd_ms_type is not None and isinstance(psd_ms_type,str) and psd_ms_type not in psd_ms_type_options:
+        if psd_ms_type == "any":
+            psd_ms_type = None
+        else:
+            raise ValueError(f"Invalid psd_ms_type: {psd_ms_type}. Must be one of {psd_ms_type_options} or None.")
+
+    if psd_ms_type is not None and isinstance(psd_ms_type, list):
+        for psd_type in psd_ms_type:
+            if psd_type not in psd_ms_type_options:
+                raise ValueError(f"Invalid psd_ms_type: {psd_type}. Must be one of {psd_ms_type_options} or None.")
     if stream == "HPGE":
-        datastreams = get_HPGe_channels(chmap).map("daq.rawid").keys()
+        HPGe_channels = get_HPGe_channels(chmap, psd_ms_type=psd_ms_type)
+        if HPGe_channels is None:
+            return []
+        if isinstance(HPGe_channels, list):
+            datastreams = []
+            if isinstance(HPGe_channels[0], dict):
+                for ch in HPGe_channels:
+                    datastreams.extend(ch.keys())
+            else:
+                for ch in HPGe_channels:
+                    datastreams.append(ch)
+        else:
+            datastreams = HPGe_channels.keys()
     else:
         datastreams = [chmap.map("name")[stream].daq.rawid]
     return datastreams
@@ -272,6 +339,36 @@ def enforce_type_delayed(array):
         ["geds", "coinc"]
     )
 
-    print(array, array.fields)
-
     return ak.enforce_type(array, delayed_type)
+
+
+import re
+def expand_range_token(token: list[str]) -> list[str]:
+    """
+    Given a token like 'r000..r005', returns ['r000','r001',...,'r005'].
+    """
+
+    output = []
+    for t in token:
+        # 1) Parse out the two endpoints
+        left, right = t.split("..")
+        # 2) Split each endpoint into its alphabetic prefix and numeric suffix
+        m1 = re.match(r"^([A-Za-z_]*)(\d+)$", left)
+        m2 = re.match(r"^([A-Za-z_]*)(\d+)$", right)
+        if not (m1 and m2):
+            raise ValueError(f"Token {t!r} is not in expected format prefix+num..prefix+num")
+        prefix1, num1 = m1.groups()
+        prefix2, num2 = m2.groups()
+        # 3) They should share the same prefix and same width
+        if prefix1 != prefix2:
+            raise ValueError("Mismatched prefixes: "
+                            f"{prefix1!r} vs {prefix2!r}")
+        width = max(len(num1), len(num2))
+        start, end = int(num1), int(num2)
+        step = 1 if start <= end else -1
+        output.append([
+            f"{prefix1}{i:0{width}d}"
+            for i in range(start, end + step, step)
+        ])
+    # 4) Generate the list
+    return np.concatenate(output).tolist()
