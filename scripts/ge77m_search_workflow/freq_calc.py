@@ -38,7 +38,7 @@ def ensure_precision(value, dtype=DEFAULT_FLOAT_TYPE):
     return value
 
 
-def nll(data, model):
+def nll(data, model, verbose=False):
         # Convert inputs to dictionaries with consistent precision
         data_dict = to_dict(data)
         model_dict = to_dict(model)
@@ -65,11 +65,16 @@ def nll(data, model):
         ll_b_ext = DEFAULT_FLOAT_TYPE(poisson.logpmf(float(n_b_ext), float(mu_b_ext)))
         ll_eps_sel = DEFAULT_FLOAT_TYPE(norm.logpdf(float(eps_sel_data), loc=float(eps_sel), scale=float(unc_sel)))
 
+        if verbose:
+                print(f"nll>: n_sb: {n_sb}, n_b_ext: {n_b_ext}, eps_sel_data: {eps_sel_data}")
+                print(f"nll>: mu_sb: {mu_sb}, mu_b_ext: {mu_b_ext}, eps_sel: {eps_sel}, unc_sel: {unc_sel}")
+                print(f"nll>: ll_sb: {ll_sb}, ll_b_ext: {ll_b_ext}, ll_eps_sel: {ll_eps_sel}")
+
         result = DEFAULT_FLOAT_TYPE(-2.0) * (ll_sb + ll_b_ext + ll_eps_sel)
         return result
 
 
-def estimate_MLE(dat,set_r_Ge77m=False,verbose=False):
+def estimate_MLE(dat,set_r_Ge77m=False,verbose=False,fix_systematics=False):
 
         def nll_wrapper(n_sb,n_b_ext,r_Ge77m,r_b,eps_sel):
                 tmp_data = {
@@ -93,7 +98,7 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False):
                         if "ratio" in key or "exp" in key or "unc_" in key:
                                 tmp_model[key] = dat[key]
 
-                tmp = nll(tmp_data,tmp_model)
+                tmp = nll(tmp_data,tmp_model,verbose=verbose)
 
                 if verbose:
                         print(f"n_sb: {n_sb}, n_b_ext: {n_b_ext}, r_Ge77m: {r_Ge77m}, r_b: {r_b}, eps_sel: {eps_sel} -> NLL: {tmp}")
@@ -125,15 +130,15 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False):
         output = manual_bf(dat)
 
         if verbose:
-                print("Manual BF output:", output)
+                print("estimate_MLE> Manual BF output:", output)
 
         m = Minuit(nll_wrapper, 
-                        n_sb = dat["n_sb"], 
-                        n_b_ext = dat["n_b_ext"], 
-                        r_Ge77m = output["r_Ge77m"], 
-                        r_b = output["r_b"],
-                        eps_sel = dat["eps_sel"]
-                )
+                n_sb = dat["n_sb"], 
+                n_b_ext = dat["n_b_ext"], 
+                r_Ge77m = output["r_Ge77m"], 
+                r_b = output["r_b"],
+                eps_sel = dat["eps_sel"]
+        )
 
         dat_ak = ak.Array([dat])
 
@@ -146,6 +151,9 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False):
         for key in output.keys():
                 if "eps_" in key:
                         m.limits[key] = [0,1]
+                        if fix_systematics:
+                                m.fixed[key] = True  # Fix eps_sel to its nominal value when fixing systematics
+
         if set_r_Ge77m:
                 m.values["r_Ge77m"] = set_r_Ge77m
                 m.fixed["r_Ge77m"] = True
@@ -159,7 +167,7 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False):
         m.migrad()
 
         if verbose:
-                print("Minuit output:", m.params)
+                print("estimate_MLE> Minuit output:", m.params)
 
         output["r_Ge77m"] = DEFAULT_FLOAT_TYPE(m.params["r_Ge77m"].value)
         output["r_b"] = DEFAULT_FLOAT_TYPE(m.params["r_b"].value)
@@ -177,7 +185,7 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False):
 
         return output
 
-def nllr(data, model):
+def nllr(data, model, verbose=False, fix_systematics=False):
         # Enhanced precision approach for likelihood ratio calculation
         # The key is to minimize precision loss from subtracting similar values
         
@@ -189,8 +197,8 @@ def nllr(data, model):
         r_Ge77m_fixed = model_hp["r_Ge77m"]
         
         # Compute MLEs with enhanced precision settings
-        model_MLE_r_Ge77m_fixed = estimate_MLE(data_hp, set_r_Ge77m=r_Ge77m_fixed)
-        model_MLE = estimate_MLE(data_hp)
+        model_MLE_r_Ge77m_fixed = estimate_MLE(data_hp, set_r_Ge77m=r_Ge77m_fixed, verbose=verbose, fix_systematics=fix_systematics)
+        model_MLE = estimate_MLE(data_hp, verbose=verbose, fix_systematics=fix_systematics)
         
         # Convert MLE results to consistent precision
         model_MLE_r_Ge77m_fixed_hp = to_dict(model_MLE_r_Ge77m_fixed)
@@ -203,10 +211,18 @@ def nllr(data, model):
         # Return the difference with careful precision handling
         result = DEFAULT_FLOAT_TYPE(nll_fixed) - DEFAULT_FLOAT_TYPE(nll_free)
         
+        if verbose:
+                print(f"Data: {data_hp}")
+                print(f"Model (fixed r_Ge77m): {model_MLE_r_Ge77m_fixed_hp}")
+                print(f"Model (free r_Ge77m): {model_MLE_hp}")
+                print(f"NLL (fixed r_Ge77m): {nll_fixed}")
+                print(f"NLL (free r_Ge77m): {nll_free}")
+                print(f"NLL Ratio Result: {result}")
+
         # Ensure result is non-negative (likelihood ratio should be >= 0)
         return DEFAULT_FLOAT_TYPE(max(result, 0.0))
 
-def generate_toy_data(model,sample_size=1000):
+def generate_toy_data(model, sample_size=1000, fix_systematics=False):
         def sample(input_data):
                 # Ensure all inputs use highest precision
                 eps_sel = DEFAULT_FLOAT_TYPE(input_data["eps_sel"])
@@ -216,7 +232,15 @@ def generate_toy_data(model,sample_size=1000):
                 exp = DEFAULT_FLOAT_TYPE(model["exp"])
                 ratio = DEFAULT_FLOAT_TYPE(input_data["ratio"])
                 
-                true_eps_sel = DEFAULT_FLOAT_TYPE(np.random.normal(eps_sel, unc_sel))
+                if fix_systematics:
+                        # Use nominal values without fluctuations
+                        true_eps_sel = eps_sel
+                        observed_eps_sel = eps_sel
+                else:
+                        # Include systematic uncertainties
+                        true_eps_sel = DEFAULT_FLOAT_TYPE(np.random.normal(eps_sel, unc_sel))
+                        observed_eps_sel = DEFAULT_FLOAT_TYPE(np.random.normal(true_eps_sel, unc_sel))
+
                 true = {
                         "n_b": np.random.poisson(r_b * exp),
                         "n_s": np.random.poisson(true_eps_sel * r_Ge77m * exp),
@@ -228,7 +252,7 @@ def generate_toy_data(model,sample_size=1000):
                         "n_b_ext": DEFAULT_FLOAT_TYPE(true["n_b_ext"]),
                         "ratio": ratio,
                         "exp": exp,
-                        "eps_sel": eps_sel, # Use nominal value, not the true one
+                        "eps_sel": observed_eps_sel,
                         "unc_sel": unc_sel
                 }
                 
@@ -264,19 +288,19 @@ def calc_p_val(thr,distr):
 
 def generate_toy_mcs_batch(args):
     """Helper function to compute NLL H0 for a specific model"""
-    model, sample_size = args
-    return generate_toy_data(model,sample_size=sample_size)
+    model, sample_size, fix_systematics = args
+    return generate_toy_data(model, sample_size=sample_size, fix_systematics=fix_systematics)
 
 def compute_nll_for_toy_batch(args):
     """Helper function to compute NLL for a batch of toy data"""
-    toy_batch, model = args
-    return [nllr(data_test, model) for data_test in toy_batch]
+    toy_batch, model, fix_systematics = args
+    return [nllr(data_test, model, fix_systematics=fix_systematics) for data_test in toy_batch]
 
 
 def compute_nll_h0_for_model(args):
     """Helper function to compute NLL H0 for a specific model"""
-    toy_h0, model = args
-    return [nllr(toy_h0_entry, model) for toy_h0_entry in toy_h0]
+    toy_h0, model, fix_systematics = args
+    return [nllr(toy_h0_entry, model, fix_systematics=fix_systematics) for toy_h0_entry in toy_h0]
 
 
 def compute_p_val_for_batch(args):
@@ -295,7 +319,8 @@ def calculate_mle_and_ci(
         n_threads=None,
         sample_size=10000,
         range_max=2.0,
-        range_points=40
+        range_points=40,
+        fix_systematics=False
         ):
 
         if n_threads is None:
@@ -339,7 +364,7 @@ def calculate_mle_and_ci(
         }
         print("Data: ", data)
 
-        model_MLE = estimate_MLE(data)
+        model_MLE = estimate_MLE(data, fix_systematics=fix_systematics)
         print("Estimated MLE parameters:", model_MLE)
 
         para_range = np.linspace(0, range_max, range_points, dtype=DEFAULT_FLOAT_TYPE)
@@ -352,7 +377,7 @@ def calculate_mle_and_ci(
         print("Generating toy data...")
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
                 # Prepare arguments for parallel processing
-                args_list = [(model_range[i], sample_size) for i in range(len(model_range))]
+                args_list = [(model_range[i], sample_size, fix_systematics) for i in range(len(model_range))]
                 
                 # Use list comprehension with executor.map for parallel processing
                 toy_range = list(tqdm(executor.map(generate_toy_mcs_batch, args_list), 
@@ -362,24 +387,24 @@ def calculate_mle_and_ci(
         print("Computing NLL range using multithreading...")
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
                 # Prepare arguments for parallel processing
-                args_list = [(toy_range[i], model_range[i]) for i in range(len(toy_range))]
+                args_list = [(toy_range[i], model_range[i], fix_systematics) for i in range(len(toy_range))]
                 
                 # Use list comprehension with executor.map for parallel processing
                 nll_range = list(tqdm(executor.map(compute_nll_for_toy_batch, args_list), 
                                     total=len(args_list), desc="NLL calculations"))
         
         nll_range = np.array(nll_range)
-        data_nll = np.array([nllr(data,model_range[i]) for i in range(len(toy_range))])
+        data_nll = np.array([nllr(data, model_range[i], verbose=False, fix_systematics=fix_systematics) for i in range(len(toy_range))])
         p_value_range = np.array([np.count_nonzero(nll_range[i] >= data_nll[i])/len(nll_range[i]) for i in range(len(toy_range))])
 
         model_H0 = model_MLE.copy()
         model_H0["r_Ge77m"] = 0
 
-        toy_H0 = generate_toy_data(model_H0,sample_size=sample_size)
+        toy_H0 = generate_toy_data(model_H0, sample_size=sample_size, fix_systematics=fix_systematics)
 
         print("Computing NLL H0 range using multithreading...")
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
-                args_list = [(toy_H0, model_range[i]) for i in range(len(toy_range))]
+                args_list = [(toy_H0, model_range[i], fix_systematics) for i in range(len(toy_range))]
                 nll_H0_range = list(tqdm(executor.map(compute_nll_h0_for_model, args_list), 
                                        total=len(args_list), desc="NLL H0 calculations"))
         
@@ -523,6 +548,7 @@ if __name__ == "__main__":
     parser.add_argument("--sample_size", type=int, default=10000, help="Number of samples for each model (default: 1000).")
     parser.add_argument("--range_max", type=float, default=2.0, help="Maximum range for the parameter (default: 2.0).")
     parser.add_argument("--range_points", type=int, default=40, help="Number of points in the parameter range (default: 40).")
+    parser.add_argument("--fix_systematics", action="store_true", help="Fix systematic uncertainties (nuisance parameters) to their nominal values.")
 
     args = parser.parse_args()
 
@@ -534,6 +560,7 @@ if __name__ == "__main__":
     print(f"Exposure Path: {args.exposure_path}")
     print(f"Number of Threads: {args.n_threads}")
     print(f"Sample Size: {args.sample_size}")
+    print(f"Fix Systematics: {args.fix_systematics}")
 
     calculate_mle_and_ci(
         args.output_path,
@@ -544,5 +571,6 @@ if __name__ == "__main__":
         n_threads=args.n_threads,
         sample_size=args.sample_size,
         range_max=args.range_max,
-        range_points=args.range_points
+        range_points=args.range_points,
+        fix_systematics=args.fix_systematics
     )
