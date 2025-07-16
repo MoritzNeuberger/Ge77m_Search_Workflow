@@ -37,10 +37,10 @@ physics_dataset: "0vbb"
 
 selection:
   pre:
-    max_delta_sec: 5370
+    max_delta_sec: 77473
     e_min: 25
   main:
-    off_dataset: [387,5370]
+    off_dataset: [387,77473]
     on_dataset: [0,387]
     prompt_e_range: [500,6500]
     delayed_e_range: 

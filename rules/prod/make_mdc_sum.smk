@@ -1,4 +1,4 @@
-def get_period_run_info(filename):
+def get_period_run_info_mdc(filename):
     """
     Extract period and run information from the filename.
     """
@@ -13,7 +13,7 @@ mdc_files = sorted(glob.glob("gen/mu_delayed_coinc/*/*/*.lh5"))
 structured_files = {}
 
 for file in mdc_files:
-    p,r = get_period_run_info(file)
+    p,r = get_period_run_info_mdc(file)
     if p not in structured_files:
         structured_files[p] = {}
     if r not in structured_files[p]:
@@ -52,7 +52,7 @@ rule make_sum_mdc:
         structured_files = {}
 
         for file in mdc_files:
-            p,r = get_period_run_info(file)
+            p,r = get_period_run_info_mdc(file)
             if p not in structured_files:
                 structured_files[p] = {}
             if r not in structured_files[p]:

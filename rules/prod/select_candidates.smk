@@ -35,7 +35,7 @@ rule select_candidates:
         import awkward as ak 
         import yaml
 
-        skm = lh5.read_as("mdc",input[0],"ak")
+        skm = lh5.read_as("skm",input[0],"ak")
         selection = config["selection"]["main"]
 
         with open(input[1], 'r') as f:
@@ -44,13 +44,13 @@ rule select_candidates:
 
         # select time in on
         on_dataset = selection["on_dataset"]
-        mask_on_data = (skm["dT"] > on_dataset[0]) & (skm["dT"] < on_dataset[1])
+        mask_on_data = ak.any((skm["dT"] > on_dataset[0]) & (skm["dT"] < on_dataset[1]),axis=-1)
         skm_on = skm[mask_on_data]
         skm_on_topology = select_topology_candidates(skm_on)
 
         # select time in off 
         off_dataset = selection["off_dataset"]
-        mask_off_data = (skm["dT"] > off_dataset[0]) & (skm["dT"] < off_dataset[1])
+        mask_off_data = ak.any((skm["dT"] > off_dataset[0]) & (skm["dT"] < off_dataset[1]),axis=-1)
         skm_off = skm[mask_off_data]
         skm_off_topology = select_topology_candidates(skm_off)
 
@@ -60,7 +60,7 @@ rule select_candidates:
         print(skm_on_selected)
 
         output = lh5.write(
-            types.Table(skm_on_selected),name="mdc", lh5_file=str(output[0])
+            types.Table(skm_on_selected),name="skm", lh5_file=str(output[0])
         )
 
         # Plotting the energy distribution of the selected candidates on and off (off scaled with relative_fraction)

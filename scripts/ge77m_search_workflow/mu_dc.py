@@ -199,7 +199,7 @@ def save_output(mdc_data,output):
     lh5.write(types.Table(enforce_type(mdc_data)), name="mdc", lh5_file=str(output))
 
 
-def process_mu_delayed_coinc(input, output,default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", max_delta_sec=100*53.7, metadata=None):
+def process_mu_delayed_coinc(input, output,default_ref_version="ref-v2.1.0", fallback_ref_version="ref-v2.0.0", max_delta_sec=100*53.7, metadata=None, min_cuspEmax=25):
     import time
 
     start = time.time()
@@ -207,7 +207,7 @@ def process_mu_delayed_coinc(input, output,default_ref_version="ref-v2.1.0", fal
     end = time.time()
     print(f"Loaded MGC data in {end - start:.2f} seconds")
     start = time.time()
-    hpge_data = generate_hpge_data( input.pht_files, default_ref_version=default_ref_version, fallback_ref_version=fallback_ref_version, metadata=metadata)
+    hpge_data = generate_hpge_data( input.pht_files, default_ref_version=default_ref_version, fallback_ref_version=fallback_ref_version, metadata=metadata, min_cuspEmax=min_cuspEmax)
     end = time.time()
     print(f"Generated HPGe data in {end - start:.2f} seconds")
     start = time.time()

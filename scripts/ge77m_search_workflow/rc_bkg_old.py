@@ -5,7 +5,7 @@ import yaml
 import lgdo.types as types
 import os
 
-def calculate_rc_bkg(
+def calculate_rc_bkg_old(
             skm_file,
             exposure_file,
             output_rates,
@@ -26,48 +26,68 @@ def calculate_rc_bkg(
         exp = yaml.safe_load(f)
     
     # select time in off 
-    mask_off_data = ak.any((skm["dT"] > off_dataset[0]) & (skm["dT"] < off_dataset[1]), axis=-1)
-    mask_on_data = ak.any(skm["dT"] < off_dataset[0],axis=-1)
-
-    mask_low_E = skm["delayed"]["geds"]["energy"] < 1000
-    mask_high_E = (skm["delayed"]["geds"]["energy"] > delayed_e_range[0][0]) & (skm["delayed"]["geds"]["energy"] < delayed_e_range[0][1]) | (skm["delayed"]["geds"]["energy"] > delayed_e_range[1][0]) & (skm["delayed"]["geds"]["energy"] < delayed_e_range[1][1])
-
-
+    mask_off_data = (skm["dT"] > off_dataset[0]) & (skm["dT"] < off_dataset[1])
+    skm_off = skm[mask_off_data]
 
     # generate masks for different selections
-    mask_mult = skm["delayed"]["coinc"]["multiplicity"] == 1
-    mask_lar = ~(skm["delayed"]["coinc"]["spm_coinc"])
-    mask_psd = np.arange(len(skm))
+    mask_mult = skm_off["delayed"]["coinc"]["multiplicity"] == 1
+    mask_lar = ~(skm_off["delayed"]["coinc"]["spm_coinc"])
+    mask_psd = np.arange(len(skm_off))
     if psd_ms_type != "any":
-        mask_psd = skm["delayed"]["geds"]["quality"]["psd_is_bb_like"]
-    mask_energy = np.sum(np.array([(skm["delayed"]["geds"]["energy"] > r[0]) & (skm["delayed"]["geds"]["energy"] < r[1]) for r in delayed_e_range]).T,axis=-1) > 0
+        mask_psd = skm_off["delayed"]["geds"]["quality"]["psd_is_bb_like"]
+    mask_energy = np.sum(np.array([(skm_off["delayed"]["geds"]["energy"] > r[0]) & (skm_off["delayed"]["geds"]["energy"] < r[1]) for r in delayed_e_range]).T,axis=-1) > 0
 
     # generate combinations of masks
     masks = {
-        "all": np.ones(len(skm),dtype=bool),
+        "all": np.ones(len(skm_off),dtype=bool),
         "mult": mask_mult,
         "mult_lar": mask_mult & mask_lar
     }
-
+    
     if psd_ms_type != "any":
         masks["mult_lar_psd"] = mask_mult & mask_lar & mask_psd
 
-    C = np.sum(mask_on_data & mask_low_E & masks["all"])
-    D = np.sum(mask_off_data & mask_low_E & masks["all"])
+    # calculate relative fraction of events in on dataset compared to off dataset by fitting the dT distribution in the off dataset and extrapolating
+    def estimate_relative_fraction_on_vs_off(dataset):
+        # get dT distribution of off dataset
+        bins = np.linspace(off_dataset[0],off_dataset[1],201)
+        bin_width = bins[1] - bins[0]
+        hist_off, _ = np.histogram(dataset["dT"], bins)
+        area_off = np.sum(hist_off)
 
-    fraction_off_to_on = C / D if D > 0 else 0.0
+        # fit distribution with a linear function
+        coeffs = np.polyfit(bins[:-1], hist_off, 1)
+
+        # estimate area (integral) in the on dataset
+        area_on = (coeffs[1] * (on_dataset[1] - on_dataset[0]) + coeffs[0] * (on_dataset[1] - on_dataset[0])**2 / 2)/bin_width
+
+        if draw_distribution:
+            import matplotlib.pyplot as plt
+            plt.hist(dataset["dT"], bins=bins, alpha=0.5, label="Off dataset")
+            plt.axvline(on_dataset[1], color='r', linestyle='--')
+            x = np.linspace(on_dataset[0], off_dataset[1], 100)
+            y = np.polyval(coeffs, x)
+            plt.plot(x,y,ls=":",color="black")
+            plt.xlabel("dT")
+            plt.ylabel("Counts")
+            plt.savefig(f"{fig_folder}/dT_distr.pdf")
+            plt.clf()
+
+        return area_on / area_off if area_off > 0 else 0
+
+    relative_fraction = estimate_relative_fraction_on_vs_off(skm_off)
+    print(f"Relative fraction of on vs off dataset: {relative_fraction:.2f}")
 
     # calculate background rates
     rates = {}
     unc = {}
     counts = {}
     for key, mask in masks.items():
-        B = np.sum(mask_off_data & mask_high_E & mask & masks[key])
-        A_est = fraction_off_to_on * B
-        A_est_unc = fraction_off_to_on * np.sqrt(B)
-        rates[key] = float(A_est / exp["total_exposure"])
-        unc[key] = float(A_est_unc / exp["total_exposure"])
-        counts[key] = int(B)
+        print("total selection:", np.sum(mask_energy & mask))
+        rates[key] = float(relative_fraction * np.sum(mask_energy & mask) / exp["total_exposure"])
+        unc[key] = float(relative_fraction * np.sqrt(np.sum(mask_energy & mask)) / exp["total_exposure"])
+        counts[key] = int(np.sum(mask_energy & mask))
+        print(f"Rate for {key}: {rates[key]} +/- {unc[key]} cts/(kg yr)")
     
 
 
@@ -76,7 +96,7 @@ def calculate_rc_bkg(
     pdfs = {"bins": np.linspace(0,3000,301)}
     bin_width = pdfs["bins"][1] - pdfs["bins"][0]
     for key, mask in masks.items():
-        pdfs[key] = np.histogram(skm["delayed"]["geds"]["energy"][mask_off_data & mask], bins=pdfs["bins"], weights=np.full(len(skm["delayed"]["geds"]["energy"][mask_off_data & mask]),1/(exp["total_exposure"]* bin_width) ))[0]
+        pdfs[key] = np.histogram(skm_off["delayed"]["geds"]["energy"][mask], bins=pdfs["bins"], weights=np.full(len(skm_off["delayed"]["geds"]["energy"][mask]),1/(exp["total_exposure"]* bin_width) ))[0]
 
     if draw_distribution:
         import matplotlib.pyplot as plt
@@ -114,8 +134,8 @@ def calculate_rc_bkg(
         for i in range(len(e_low)):
             for j in range(len(e_high)):
                 if e_low[i] < e_high[j]:
-                    mask_energy = (skm["delayed"]["geds"]["energy"][mask_off_data & mask] > e_low[i]) & (skm["delayed"]["geds"]["energy"][mask_off_data & mask] < e_high[j])
-                    z[i, j] = float(fraction_off_to_on * np.sum(mask_energy) / exp["total_exposure"])
+                    mask_energy = (skm_off["delayed"]["geds"]["energy"] > e_low[i]) & (skm_off["delayed"]["geds"]["energy"] < e_high[j])
+                    z[i, j] = float(relative_fraction * np.sum(mask_energy & mask) / exp["total_exposure"])
         scans[key] = z.tolist()
     scans["x"] = x.tolist()
     scans["y"] = y.tolist()
@@ -123,7 +143,7 @@ def calculate_rc_bkg(
     output_data = {
         "selection": {key: {"val": rates[key], "unc": unc[key], "cts": counts[key]} for key in rates.keys()},
         "scans": scans,
-        "scaling": float(fraction_off_to_on),
+        "scaling": float(relative_fraction),
     }
 
 

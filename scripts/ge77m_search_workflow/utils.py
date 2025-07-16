@@ -89,22 +89,98 @@ def generate_timestamp_to_path_dict(input_path):
 
 def find_file_from_closest_larger_timestamp(timestamp, timestamp_path_dict):
     """
-    Find the file with the closest larger timestamp in the timestamp_path_dict.
+    Find the file that actually contains the target timestamp by checking timestamp ranges.
     
     Args:
         timestamp (float): The timestamp to compare against.
         timestamp_path_dict (dict): A dictionary mapping timestamps to file paths.
         
     Returns:
-        str: The path of the file with the closest larger timestamp, or None if not found.
+        str: The path of the file that contains the timestamp, or None if not found.
     """
+    import lgdo.lh5 as lh5
+    
+    # First, try the original approach - find files with larger timestamps
+    candidate_files = []
     for ts in sorted(timestamp_path_dict.keys()):
         if ts > timestamp:
-            return timestamp_path_dict[ts]
+            candidate_files.append(timestamp_path_dict[ts])
+    
+    # If no files found with larger timestamps, also check smaller ones
+    if not candidate_files:
+        for ts in sorted(timestamp_path_dict.keys(), reverse=True):
+            if ts <= timestamp:
+                candidate_files.append(timestamp_path_dict[ts])
+    
+    # Now check each candidate file to see if it actually contains the timestamp
+    for file_path in candidate_files:
+        try:
+            # Get list of available groups in the file
+            groups = lh5.ls(file_path)
+            
+            # Look for channel groups (ch + number pattern)
+            channels = [group for group in groups if group.startswith('ch') and group[2:].isdigit()]
+            
+            if not channels:
+                continue
+            
+            # Try the first available channel
+            test_channel = channels[0]
+            timestamps_path = f"{test_channel}/hit/timestamp"  # Changed from raw to hit
+            
+            # Check if timestamp field exists
+            try:
+                # Read first few timestamps
+                first_timestamps = lh5.read(timestamps_path, file_path, n_rows=5)
+                
+                # Get the total length by reading the shape
+                full_timestamps = lh5.read(timestamps_path, file_path)
+                if hasattr(full_timestamps, 'nda'):
+                    total_length = len(full_timestamps.nda)
+                elif hasattr(full_timestamps, 'value'):
+                    total_length = len(full_timestamps.value)
+                else:
+                    total_length = len(full_timestamps)
+                
+                # Read last few timestamps
+                start_row = max(0, total_length - 5)
+                n_rows = min(5, total_length - start_row)
+                last_timestamps = lh5.read(timestamps_path, file_path, start_row=start_row, n_rows=n_rows)
+                
+                # Extract timestamp values from LGDO objects
+                if hasattr(first_timestamps, 'nda'):
+                    first_ts = first_timestamps.nda[0]
+                elif hasattr(first_timestamps, 'value'):
+                    first_ts = first_timestamps.value[0] if hasattr(first_timestamps.value, '__len__') else first_timestamps.value
+                else:
+                    first_ts = first_timestamps[0]
+                
+                if hasattr(last_timestamps, 'nda'):
+                    last_ts = last_timestamps.nda[-1]
+                elif hasattr(last_timestamps, 'value'):
+                    last_ts = last_timestamps.value[-1] if hasattr(last_timestamps.value, '__len__') else last_timestamps.value
+                else:
+                    last_ts = last_timestamps[-1]
+                
+                # Check if our target timestamp falls within this range
+                if first_ts <= timestamp <= last_ts:
+                    return file_path
+                    
+            except Exception as inner_e:
+                print(f"Warning: Could not read timestamps from {timestamps_path} in {file_path}: {inner_e}")
+                continue
+                        
+        except Exception as e:
+            # If we can't read this file, continue to the next one
+            print(f"Warning: Could not check timestamp range for {file_path}: {e}")
+            continue
+    
+    # If no file contains the timestamp, return None
     return None
 
 from pygama.flow import DataLoader
 from legendmeta import LegendMetadata
+import json
 
 def generate_data_loader(run_info,config_file):
     with open(config_file,"r") as f:
@@ -229,8 +305,19 @@ def enforce_type_prompt(array):
                 ],
                 ["hit_table", "hit_idx"]
             ),  # id
+            ak.types.RecordType(
+                [
+                    ak.types.NumpyType("float64"),  # trapEmax_ctc_cal
+                    ak.types.NumpyType("float64"),  # cuspEmax_ctc_cal
+                    ak.types.NumpyType("float64"),  # zacEmax_ctc_cal
+                ],
+                ["trapEmax_ctc_cal", "cuspEmax_ctc_cal", "zacEmax_ctc_cal"]
+            ),  # other_energy_estimators
+            ak.types.NumpyType("float64"),  # tp_max
+            ak.types.NumpyType("float64"),  # wf_max
+            ak.types.NumpyType("float64"),  # tailEmax
         ],
-        ["energy", "tp_01", "quality", "id"]
+        ["energy", "tp_01", "quality", "id", "other_energy_estimators", "tp_max", "wf_max", "tailEmax"]
     )
 
     mu_type = ak.types.RecordType(
@@ -257,7 +344,6 @@ def enforce_type_prompt(array):
     coinc_type = ak.types.RecordType(
         [
             ak.types.NumpyType("float64"),  # mu_diff
-            ak.types.NumpyType("bool"),     # is_in_coincidence_with_mu
             ak.types.RecordType(
                 [
                     ak.types.NumpyType("int64"),   # evt_idx
@@ -266,7 +352,7 @@ def enforce_type_prompt(array):
                 ["evt_idx", "timestamp"]
             ),  # id
         ],
-        ["mu_diff", "is_in_coincidence_with_mu", "id"]
+        ["mu_diff", "id"]
     )
 
     output_type = ak.types.RecordType(

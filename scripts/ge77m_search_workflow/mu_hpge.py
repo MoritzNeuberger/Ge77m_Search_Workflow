@@ -50,7 +50,13 @@ def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, dat
     evt_id = np.where(pet_data_geds["rawid"][selected_idx] == selected_id)[0][0]
 
     output_data["geds"]["energy"].append(float(data_pht_hpge["cuspEmax_ctc_cal"][0]))
+    output_data["geds"]["other_energy_estimators"]["trapEmax_ctc_cal"].append(float(data_pht_hpge["trapEmax_ctc_cal"][0]))
+    output_data["geds"]["other_energy_estimators"]["cuspEmax_ctc_cal"].append(float(data_pht_hpge["cuspEmax_ctc_cal"][0]))
+    output_data["geds"]["other_energy_estimators"]["zacEmax_ctc_cal"].append(float(data_pht_hpge["zacEmax_ctc_cal"][0]))
     output_data["geds"]["tp_01"].append(float(data_psp_hpge["tp_01"][0]))
+    output_data["geds"]["tp_max"].append(float(data_psp_hpge["tp_max"][0]))
+    output_data["geds"]["wf_max"].append(float(data_psp_hpge["wf_max"][0]))
+    output_data["geds"]["tailEmax"].append(float(data_psp_hpge["tailEmax"][0]))
     output_data["geds"]["quality"]["is_bb_like"].append(bool(pet_data_geds[selected_idx]["quality"]["is_bb_like"]))
     output_data["geds"]["quality"]["is_good_channel"].append(bool(pet_data_geds[selected_idx]["quality"]["is_good_channel"][evt_id]))
     output_data["geds"]["quality"]["is_saturated"].append(bool(data_pht_hpge["is_saturated"][0]))
@@ -70,9 +76,6 @@ def fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, dat
 
 
     output_data["coinc"]["mu_diff"].append(float(data_psp_hpge["tp_01"][0] - data_psp_muon["tp_max"][0]))
-    output_data["coinc"]["is_in_coincidence_with_mu"].append(
-        bool(acc_range[0] < output_data["coinc"]["mu_diff"][-1] < acc_range[1])
-    )
     output_data["coinc"]["id"]["evt_idx"].append(int(selected_idx))
     output_data["coinc"]["id"]["timestamp"].append(float(pet_data_trigger[selected_idx]["timestamp"]))
 
@@ -92,7 +95,7 @@ def process_one_entry(selected_id, selected_idx, store, paths, chmap, pet_data_g
     fill_entry(output_data, selected_id, selected_idx, chmap, data_pht_hpge, data_psp_hpge, data_psp_muon, pet_data_geds, pet_data_trigger, pet_data_coinc, paths)
 
 def make_selection(pet_data_coinc,pet_data_geds):
-    mask = (pet_data_coinc["muon"] | pet_data_coinc["muon_offline"]) & ~pet_data_coinc["puls"] & ~pet_data_coinc["is_forced"] 
+    mask = (pet_data_coinc["muon"] | pet_data_coinc["muon_offline"]) & ~pet_data_coinc["puls"]
     
     selection_idx = ak.to_numpy(ak.flatten(pet_data_geds["hit_idx"][mask]))
     selection_id = ak.to_numpy(ak.flatten(pet_data_geds["rawid"][mask]))
@@ -135,7 +138,15 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
             "id": {
                 "hit_table": [],
                 "hit_idx": []
-            }
+            },
+            "other_energy_estimators": {
+                "trapEmax_ctc_cal": [],
+                "cuspEmax_ctc_cal": [],
+                "zacEmax_ctc_cal": []
+            },
+            "tp_max": [],
+            "wf_max": [],
+            "tailEmax": []
         },
         "mu": {
             "tp_max": [],
@@ -151,7 +162,6 @@ def process_mu_hpge_coinc(input, output, default_ref_version="ref-v2.1.0", fallb
         },
         "coinc": {
             "mu_diff": [],
-            "is_in_coincidence_with_mu": [],
             "id":{
                 "evt_idx": [],
                 "timestamp": []

@@ -49,63 +49,120 @@ def nll(data, model, verbose=False):
         eps_sel_data = data_dict["eps_sel"]
         
         eps_sel = model_dict["eps_sel"]
-        r_Ge77m = model_dict["r_Ge77m"]
         r_b = model_dict["r_b"]
         ratio = model_dict["ratio"]
         exp = model_dict["exp"]
         unc_sel = model_dict["unc_sel"]
+        
+        # Handle flexible parameter choice
+        param_type = model_dict["param_type"]  # Default to original behavior
+        scaling_factor = model_dict["scaling_factor"]
+        unc_scaling = model_dict["unc_scaling"]
+        scaling_factor_data = data_dict["scaling_factor"]
+        
+        if param_type == "r_Ge77m":
+            # Original behavior: r_Ge77m is the primary parameter
+            r_Ge77m = model_dict["r_Ge77m"]
+            # Calculate derived r_Ge77_and_Ge77m: r_Ge77_and_Ge77m = r_Ge77m / scaling_factor
+            r_Ge77_and_Ge77m = model_dict["r_Ge77_and_Ge77m"]
+        else:  # param_type == "r_Ge77_and_Ge77m"
+            # New behavior: r_Ge77_and_Ge77m is the primary parameter
+            r_Ge77_and_Ge77m = model_dict["r_Ge77_and_Ge77m"]
+            # Calculate r_Ge77m from r_Ge77_and_Ge77m: r_Ge77m = r_Ge77_and_Ge77m * scaling_factor
+            r_Ge77m = r_Ge77_and_Ge77m * scaling_factor
         
         # Calculate with consistent precision
         mu_sb = (eps_sel * r_Ge77m + r_b) * exp
         mu_b_ext = (r_b / ratio) * exp
         
         # Convert to float64 for numba_stats functions, then back to high precision
-        # numba_stats is faster and multiprocessing-compatible
         ll_sb = DEFAULT_FLOAT_TYPE(poisson.logpmf(float(n_sb), float(mu_sb)))
         ll_b_ext = DEFAULT_FLOAT_TYPE(poisson.logpmf(float(n_b_ext), float(mu_b_ext)))
         ll_eps_sel = DEFAULT_FLOAT_TYPE(norm.logpdf(float(eps_sel_data), loc=float(eps_sel), scale=float(unc_sel)))
+        
+        # Add constraint for scaling factor when using r_Ge77_and_Ge77m as primary parameter
+        ll_scaling_factor = DEFAULT_FLOAT_TYPE(0.0)
+        if param_type == "r_Ge77_and_Ge77m":
+            ll_scaling_factor = DEFAULT_FLOAT_TYPE(norm.logpdf(float(scaling_factor_data), loc=float(scaling_factor), scale=float(unc_scaling)))
 
         if verbose:
+                print(f"nll>: param_type: {param_type}")
                 print(f"nll>: n_sb: {n_sb}, n_b_ext: {n_b_ext}, eps_sel_data: {eps_sel_data}")
+                print(f"nll>: r_Ge77m: {r_Ge77m}, r_Ge77_and_Ge77m: {r_Ge77_and_Ge77m}")
+                print(f"nll>: scaling_factor: {scaling_factor}, scaling_factor_data: {scaling_factor_data}")
                 print(f"nll>: mu_sb: {mu_sb}, mu_b_ext: {mu_b_ext}, eps_sel: {eps_sel}, unc_sel: {unc_sel}")
-                print(f"nll>: ll_sb: {ll_sb}, ll_b_ext: {ll_b_ext}, ll_eps_sel: {ll_eps_sel}")
+                print(f"nll>: ll_sb: {ll_sb}, ll_b_ext: {ll_b_ext}, ll_eps_sel: {ll_eps_sel}, ll_scaling_factor: {ll_scaling_factor}")
 
-        result = DEFAULT_FLOAT_TYPE(-2.0) * (ll_sb + ll_b_ext + ll_eps_sel)
+        result = DEFAULT_FLOAT_TYPE(-2.0) * (ll_sb + ll_b_ext + ll_eps_sel + ll_scaling_factor)
         return result
 
 
-def estimate_MLE(dat,set_r_Ge77m=False,verbose=False,fix_systematics=False):
+def estimate_MLE(dat, set_param_value=False, verbose=False, fix_systematics=False, param_type="r_Ge77m"):
 
-        def nll_wrapper(n_sb,n_b_ext,r_Ge77m,r_b,eps_sel):
+        # Flexible wrapper for different parameter types
+        if param_type == "r_Ge77m":
+            def nll_wrapper(n_sb, n_b_ext, r_Ge77m, r_b, eps_sel, scaling_factor=0.5):
                 tmp_data = {
                         "n_sb": n_sb,
                         "n_b_ext": n_b_ext,
-                        "eps_sel": dat["eps_sel"]
+                        "eps_sel": dat["eps_sel"],
+                        "scaling_factor": dat["scaling_factor"]
                 }
                 tmp_model = {
                         "r_Ge77m": r_Ge77m,
+                        "r_Ge77_and_Ge77m": r_Ge77m / scaling_factor,  # Derived parameter
                         "r_b": r_b,
                         "eps_sel": eps_sel,
+                        "scaling_factor": scaling_factor,
+                        "param_type": param_type
                 }
                 # Handle both dict and awkward array cases
                 if hasattr(dat, 'keys'):
                         keys_to_check = dat.keys()
                 else:
-                        # For awkward arrays, get the field names
-                        keys_to_check = dat.fields if hasattr(dat, 'fields') else ['ratio', 'exp', 'eps_sel', 'unc_sel']
+                        keys_to_check = dat.fields if hasattr(dat, 'fields') else ['ratio', 'exp', 'eps_sel', 'unc_sel', 'unc_scaling']
                 
                 for key in keys_to_check:
                         if "ratio" in key or "exp" in key or "unc_" in key:
                                 tmp_model[key] = dat[key]
 
-                tmp = nll(tmp_data,tmp_model,verbose=verbose)
-
+                tmp = nll(tmp_data, tmp_model, verbose=verbose)
                 if verbose:
-                        print(f"n_sb: {n_sb}, n_b_ext: {n_b_ext}, r_Ge77m: {r_Ge77m}, r_b: {r_b}, eps_sel: {eps_sel} -> NLL: {tmp}")
+                        print(f"nll_wrapper (r_Ge77m): r_Ge77m={r_Ge77m}, r_b={r_b}, eps_sel={eps_sel}, scaling_factor={scaling_factor} -> NLL: {tmp}")
+                return tmp
+                
+        else:  # param_type == "r_Ge77_and_Ge77m"
+            def nll_wrapper(n_sb, n_b_ext, r_Ge77_and_Ge77m, r_b, eps_sel, scaling_factor=0.5):
+                tmp_data = {
+                        "n_sb": n_sb,
+                        "n_b_ext": n_b_ext,
+                        "eps_sel": dat["eps_sel"],
+                        "scaling_factor": dat["scaling_factor"]
+                }
+                tmp_model = {
+                        "r_Ge77_and_Ge77m": r_Ge77_and_Ge77m,
+                        "r_Ge77m": r_Ge77_and_Ge77m * scaling_factor,  # Derived parameter
+                        "r_b": r_b,
+                        "eps_sel": eps_sel,
+                        "scaling_factor": scaling_factor,
+                        "param_type": param_type
+                }
+                # Handle both dict and awkward array cases
+                if hasattr(dat, 'keys'):
+                        keys_to_check = dat.keys()
+                else:
+                        keys_to_check = dat.fields if hasattr(dat, 'fields') else ['ratio', 'exp', 'eps_sel', 'unc_sel', 'unc_scaling']
+                
+                for key in keys_to_check:
+                        if "ratio" in key or "exp" in key or "unc_" in key:
+                                tmp_model[key] = dat[key]
 
+                tmp = nll(tmp_data, tmp_model, verbose=verbose)
+                if verbose:
+                        print(f"nll_wrapper (r_Ge77_and_Ge77m): r_Ge77_and_Ge77m={r_Ge77_and_Ge77m}, r_b={r_b}, eps_sel={eps_sel}, scaling_factor={scaling_factor} -> NLL: {tmp}")
                 return tmp
 
-        def manual_bf(dat):
+        def manual_bf(dat, param_type):
                 output = {}
                 n_sb = DEFAULT_FLOAT_TYPE(dat["n_sb"])
                 n_b_ext = DEFAULT_FLOAT_TYPE(dat["n_b_ext"])
@@ -114,49 +171,81 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False,fix_systematics=False):
                 eps_sel = DEFAULT_FLOAT_TYPE(dat["eps_sel"])
                 unc_sel = DEFAULT_FLOAT_TYPE(dat["unc_sel"])
                 
-                # Calculate with high precision using DEFAULT_FLOAT_TYPE
-                r_Ge77m_calc = (n_sb - n_b_ext * ratio) / exp / eps_sel
-                output["r_Ge77m"] = DEFAULT_FLOAT_TYPE(np.max([r_Ge77m_calc, DEFAULT_FLOAT_TYPE(0.0)]))
+                # Get scaling factor parameters
+                scaling_factor = DEFAULT_FLOAT_TYPE(dat["scaling_factor"])
+                unc_scaling = DEFAULT_FLOAT_TYPE(dat["unc_scaling"])
+
+                # Calculate total expected rate from observed data
+                total_rate_calc = (n_sb - n_b_ext * ratio) / exp / eps_sel
+                total_rate_calc = DEFAULT_FLOAT_TYPE(np.max([total_rate_calc, DEFAULT_FLOAT_TYPE(0.0)]))
                 
-                r_b_calc = n_sb / exp - output["r_Ge77m"] * eps_sel
+                output["r_Ge77m"] = total_rate_calc
+                output["r_Ge77_and_Ge77m"] = total_rate_calc / scaling_factor
+                
+                r_b_calc = n_sb / exp - total_rate_calc * eps_sel
                 output["r_b"] = DEFAULT_FLOAT_TYPE(np.max([r_b_calc, DEFAULT_FLOAT_TYPE(0.0)]))
                 
                 output["ratio"] = DEFAULT_FLOAT_TYPE(ratio)
                 output["exp"] = DEFAULT_FLOAT_TYPE(exp)
                 output["eps_sel"] = DEFAULT_FLOAT_TYPE(eps_sel)
                 output["unc_sel"] = DEFAULT_FLOAT_TYPE(unc_sel)
+                output["scaling_factor"] = scaling_factor
+                output["unc_scaling"] = unc_scaling
+                output["param_type"] = param_type
                 return output
 
-        output = manual_bf(dat)
+        output = manual_bf(dat, param_type)
 
         if verbose:
                 print("estimate_MLE> Manual BF output:", output)
 
-        m = Minuit(nll_wrapper, 
-                n_sb = dat["n_sb"], 
-                n_b_ext = dat["n_b_ext"], 
-                r_Ge77m = output["r_Ge77m"], 
-                r_b = output["r_b"],
-                eps_sel = dat["eps_sel"]
-        )
+        # Initialize Minuit with appropriate parameters based on param_type
+        if param_type == "r_Ge77m":
+                m = Minuit(nll_wrapper, 
+                        n_sb = dat["n_sb"], 
+                        n_b_ext = dat["n_b_ext"], 
+                        r_Ge77m = output["r_Ge77m"], 
+                        r_b = output["r_b"],
+                        eps_sel = dat["eps_sel"],
+                        scaling_factor = output["scaling_factor"]
+                )
+                primary_param = "r_Ge77m"
+        else:  # param_type == "r_Ge77_and_Ge77m"
+                m = Minuit(nll_wrapper, 
+                        n_sb = dat["n_sb"], 
+                        n_b_ext = dat["n_b_ext"], 
+                        r_Ge77_and_Ge77m = output["r_Ge77_and_Ge77m"], 
+                        r_b = output["r_b"],
+                        eps_sel = dat["eps_sel"],
+                        scaling_factor = output["scaling_factor"]
+                )
+                primary_param = "r_Ge77_and_Ge77m"
 
         dat_ak = ak.Array([dat])
 
         for key in dat_ak.fields:
                 if "n_" in key:
                         m.fixed[key] = True
-        for key in output.keys():
-                if "r_" in key:
-                        m.limits[key] = [0,100]
-        for key in output.keys():
-                if "eps_" in key:
-                        m.limits[key] = [0,1]
-                        if fix_systematics:
-                                m.fixed[key] = True  # Fix eps_sel to its nominal value when fixing systematics
+        
+        # Set limits for rate parameters
 
-        if set_r_Ge77m:
-                m.values["r_Ge77m"] = set_r_Ge77m
-                m.fixed["r_Ge77m"] = True
+        m.limits[primary_param] = [0, 100]
+        m.limits["r_b"] = [0, 100]
+        
+        # Set limits for efficiency parameters
+        m.limits["eps_sel"] = [0, 1]
+        if fix_systematics:
+                m.fixed["eps_sel"] = True
+        
+        # Set limits and constraints for scaling factor
+        m.limits["scaling_factor"] = [0.1, 1.0]  # Reasonable range around 0.5
+        if fix_systematics:
+                m.fixed["scaling_factor"] = True
+
+        # Handle parameter fixing
+        if set_param_value:
+                m.values[primary_param] = set_param_value
+                m.fixed[primary_param] = True
 
         m.errordef = Minuit.LIKELIHOOD
         
@@ -169,9 +258,18 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False,fix_systematics=False):
         if verbose:
                 print("estimate_MLE> Minuit output:", m.params)
 
-        output["r_Ge77m"] = DEFAULT_FLOAT_TYPE(m.params["r_Ge77m"].value)
+        # Extract fitted parameters
+        if param_type == "r_Ge77m":
+                output["r_Ge77m"] = DEFAULT_FLOAT_TYPE(m.params["r_Ge77m"].value)
+                output["r_Ge77_and_Ge77m"] = output["r_Ge77m"] / DEFAULT_FLOAT_TYPE(m.params["scaling_factor"].value)
+        else:
+                output["r_Ge77_and_Ge77m"] = DEFAULT_FLOAT_TYPE(m.params["r_Ge77_and_Ge77m"].value)
+                # Calculate r_Ge77m from fitted values
+                output["r_Ge77m"] = output["r_Ge77_and_Ge77m"] * DEFAULT_FLOAT_TYPE(m.params["scaling_factor"].value)
+        
         output["r_b"] = DEFAULT_FLOAT_TYPE(m.params["r_b"].value)
         output["eps_sel"] = DEFAULT_FLOAT_TYPE(m.params["eps_sel"].value)
+        output["scaling_factor"] = DEFAULT_FLOAT_TYPE(m.params["scaling_factor"].value)
 
         if hasattr(dat, 'keys'):
                 keys_to_check = dat.keys()
@@ -185,7 +283,7 @@ def estimate_MLE(dat,set_r_Ge77m=False,verbose=False,fix_systematics=False):
 
         return output
 
-def nllr(data, model, verbose=False, fix_systematics=False):
+def nllr(data, model, verbose=False, fix_systematics=False, param_type="r_Ge77m"):
         # Enhanced precision approach for likelihood ratio calculation
         # The key is to minimize precision loss from subtracting similar values
         
@@ -193,19 +291,22 @@ def nllr(data, model, verbose=False, fix_systematics=False):
         data_hp = to_dict(data)
         model_hp = to_dict(model)
         
-        # Get the fixed r_Ge77m value with high precision
-        r_Ge77m_fixed = model_hp["r_Ge77m"]
+        # Get the fixed parameter value based on param_type
+        if param_type == "r_Ge77m":
+            param_fixed = model_hp["r_Ge77m"]
+        else:  # param_type == "r_Ge77_and_Ge77m"
+            param_fixed = model_hp["r_Ge77_and_Ge77m"]
         
         # Compute MLEs with enhanced precision settings
-        model_MLE_r_Ge77m_fixed = estimate_MLE(data_hp, set_r_Ge77m=r_Ge77m_fixed, verbose=verbose, fix_systematics=fix_systematics)
-        model_MLE = estimate_MLE(data_hp, verbose=verbose, fix_systematics=fix_systematics)
+        model_MLE_param_fixed = estimate_MLE(data_hp, set_param_value=param_fixed, verbose=verbose, fix_systematics=fix_systematics, param_type=param_type)
+        model_MLE = estimate_MLE(data_hp, verbose=verbose, fix_systematics=fix_systematics, param_type=param_type)
         
         # Convert MLE results to consistent precision
-        model_MLE_r_Ge77m_fixed_hp = to_dict(model_MLE_r_Ge77m_fixed)
+        model_MLE_param_fixed_hp = to_dict(model_MLE_param_fixed)
         model_MLE_hp = to_dict(model_MLE)
         
         # Compute NLLs with careful precision handling
-        nll_fixed = nll(data_hp, model_MLE_r_Ge77m_fixed_hp)
+        nll_fixed = nll(data_hp, model_MLE_param_fixed_hp)
         nll_free = nll(data_hp, model_MLE_hp)
         
         # Return the difference with careful precision handling
@@ -213,33 +314,46 @@ def nllr(data, model, verbose=False, fix_systematics=False):
         
         if verbose:
                 print(f"Data: {data_hp}")
-                print(f"Model (fixed r_Ge77m): {model_MLE_r_Ge77m_fixed_hp}")
-                print(f"Model (free r_Ge77m): {model_MLE_hp}")
-                print(f"NLL (fixed r_Ge77m): {nll_fixed}")
-                print(f"NLL (free r_Ge77m): {nll_free}")
+                print(f"Model (fixed {param_type}): {model_MLE_param_fixed_hp}")
+                print(f"Model (free {param_type}): {model_MLE_hp}")
+                print(f"NLL (fixed {param_type}): {nll_fixed}")
+                print(f"NLL (free {param_type}): {nll_free}")
                 print(f"NLL Ratio Result: {result}")
 
         # Ensure result is non-negative (likelihood ratio should be >= 0)
         return DEFAULT_FLOAT_TYPE(max(result, 0.0))
 
-def generate_toy_data(model, sample_size=1000, fix_systematics=False):
+def generate_toy_data(model, sample_size=1000, fix_systematics=False, param_type="r_Ge77m"):
         def sample(input_data):
                 # Ensure all inputs use highest precision
                 eps_sel = DEFAULT_FLOAT_TYPE(input_data["eps_sel"])
                 unc_sel = DEFAULT_FLOAT_TYPE(input_data["unc_sel"])
                 r_b = DEFAULT_FLOAT_TYPE(input_data["r_b"])
-                r_Ge77m = DEFAULT_FLOAT_TYPE(input_data["r_Ge77m"])
                 exp = DEFAULT_FLOAT_TYPE(model["exp"])
                 ratio = DEFAULT_FLOAT_TYPE(input_data["ratio"])
+                
+                # Handle scaling factor parameters
+                scaling_factor = DEFAULT_FLOAT_TYPE(input_data["scaling_factor"])
+                unc_scaling = DEFAULT_FLOAT_TYPE(input_data["unc_scaling"])
                 
                 if fix_systematics:
                         # Use nominal values without fluctuations
                         true_eps_sel = eps_sel
                         observed_eps_sel = eps_sel
+                        true_scaling_factor = scaling_factor
+                        observed_scaling_factor = scaling_factor
                 else:
                         # Include systematic uncertainties
                         true_eps_sel = DEFAULT_FLOAT_TYPE(np.random.normal(eps_sel, unc_sel))
                         observed_eps_sel = DEFAULT_FLOAT_TYPE(np.random.normal(true_eps_sel, unc_sel))
+                        true_scaling_factor = DEFAULT_FLOAT_TYPE(np.random.normal(scaling_factor, unc_scaling))
+                        observed_scaling_factor = DEFAULT_FLOAT_TYPE(np.random.normal(true_scaling_factor, unc_scaling))
+
+                if param_type == "r_Ge77m":
+                      r_Ge77m = DEFAULT_FLOAT_TYPE(input_data["r_Ge77m"])
+                else:  # param_type == "r_Ge77_and_Ge77m"
+                      r_Ge77_and_Ge77m = DEFAULT_FLOAT_TYPE(input_data["r_Ge77_and_Ge77m"])
+                      r_Ge77m = r_Ge77_and_Ge77m * scaling_factor
 
                 true = {
                         "n_b": np.random.poisson(r_b * exp),
@@ -253,16 +367,30 @@ def generate_toy_data(model, sample_size=1000, fix_systematics=False):
                         "ratio": ratio,
                         "exp": exp,
                         "eps_sel": observed_eps_sel,
-                        "unc_sel": unc_sel
+                        "unc_sel": unc_sel,
+                        "scaling_factor": observed_scaling_factor,
+                        "unc_scaling": unc_scaling
                 }
                 
                 return output
 
         return ak.Array([sample(model) for _ in range(sample_size)])
 
-def generate_model(template_model,r_Ge77m):
+def generate_model(template_model, param_value, param_type="r_Ge77m"):
         output = template_model.copy()
-        output["r_Ge77m"] = r_Ge77m
+        output["param_type"] = param_type
+        
+        if param_type == "r_Ge77m":
+                output["r_Ge77m"] = param_value
+                # Calculate derived r_Ge77_and_Ge77m
+                scaling_factor = output["scaling_factor"]
+                output["r_Ge77_and_Ge77m"] = param_value / scaling_factor
+        else:  # param_type == "r_Ge77_and_Ge77m"
+                output["r_Ge77_and_Ge77m"] = param_value
+                # Calculate derived r_Ge77m
+                scaling_factor = output["scaling_factor"]
+                output["r_Ge77m"] = param_value * scaling_factor
+        
         return output
 
 def get_interval(para_range,p_value_range,alpha=0.1):
@@ -288,19 +416,19 @@ def calc_p_val(thr,distr):
 
 def generate_toy_mcs_batch(args):
     """Helper function to compute NLL H0 for a specific model"""
-    model, sample_size, fix_systematics = args
-    return generate_toy_data(model, sample_size=sample_size, fix_systematics=fix_systematics)
+    model, sample_size, fix_systematics, param_type = args
+    return generate_toy_data(model, sample_size=sample_size, fix_systematics=fix_systematics, param_type=param_type)
 
 def compute_nll_for_toy_batch(args):
     """Helper function to compute NLL for a batch of toy data"""
-    toy_batch, model, fix_systematics = args
-    return [nllr(data_test, model, fix_systematics=fix_systematics) for data_test in toy_batch]
+    toy_batch, model, fix_systematics, param_type = args
+    return [nllr(data_test, model, fix_systematics=fix_systematics, param_type=param_type) for data_test in toy_batch]
 
 
 def compute_nll_h0_for_model(args):
     """Helper function to compute NLL H0 for a specific model"""
-    toy_h0, model, fix_systematics = args
-    return [nllr(toy_h0_entry, model, fix_systematics=fix_systematics) for toy_h0_entry in toy_h0]
+    toy_h0, model, fix_systematics, param_type = args
+    return [nllr(toy_h0_entry, model, fix_systematics=fix_systematics, param_type=param_type) for toy_h0_entry in toy_h0]
 
 
 def compute_p_val_for_batch(args):
@@ -320,7 +448,10 @@ def calculate_mle_and_ci(
         sample_size=10000,
         range_max=2.0,
         range_points=40,
-        fix_systematics=False
+        fix_systematics=False,
+        param_type="r_Ge77m",
+        scaling_factor=0.5,
+        unc_scaling=0.1
         ):
 
         if n_threads is None:
@@ -330,7 +461,7 @@ def calculate_mle_and_ci(
                 rc_rates = yaml.safe_load(f)
         with open(sel_eff_path, 'r') as f:
                 sel_eff = yaml.safe_load(f)
-        selected_candidates = lh5.read_as("mdc",selected_candidates_path,"ak")
+        selected_candidates = lh5.read_as("skm",selected_candidates_path,"ak")
         with open(exposure_path, 'r') as f:
                 exposure = yaml.safe_load(f)
 
@@ -339,20 +470,26 @@ def calculate_mle_and_ci(
         ratio = rc_rates["scaling"]
         exp = exposure["total_exposure"]
 
-        selection_effs = [sel_eff["eps_time"], sel_eff["eps_prompt"], sel_eff["eps_delayed"]["selection"]["mult_lar_psd"]]
+        selection_effs = [sel_eff["eps_time"], sel_eff["eps_prompt"], sel_eff["eps_delayed"]["energy"], sel_eff["eps_delayed"]["selection"]["mult_lar_psd"]]
 
         # Calculate with highest precision
         eps_values = [DEFAULT_FLOAT_TYPE(eps["val"]) for eps in selection_effs]
         eps_sel = DEFAULT_FLOAT_TYPE(np.prod(eps_values))
+        print("Selection efficiencies:", eps_values)
         
         # Uncertainty propagation with highest precision
         unc_terms = []
+        unc_individual = []
         for i in range(len(selection_effs)):
                 unc_i = DEFAULT_FLOAT_TYPE(selection_effs[i]["unc"])
+                unc_individual.append(unc_i)
                 prod_others = DEFAULT_FLOAT_TYPE(np.prod([eps_values[j] for j in range(len(eps_values)) if j != i]))
                 unc_terms.append((unc_i * prod_others) ** 2)
+        print("Uncertainty individual terms:", unc_individual)
+        print("Uncertainty terms:", unc_terms)
         
         unc_sel = DEFAULT_FLOAT_TYPE(np.sqrt(np.sum(unc_terms)))
+        print("Selection efficiency:", eps_sel, "Uncertainty:", unc_sel)
 
         data = {
                 "n_sb": DEFAULT_FLOAT_TYPE(n_obs),
@@ -361,23 +498,30 @@ def calculate_mle_and_ci(
                 "exp": DEFAULT_FLOAT_TYPE(exp),
                 "eps_sel": eps_sel,
                 "unc_sel": unc_sel,
+                "scaling_factor": DEFAULT_FLOAT_TYPE(scaling_factor),
+                "unc_scaling": DEFAULT_FLOAT_TYPE(unc_scaling),
         }
         print("Data: ", data)
+        print(f"Parameter type: {param_type}")
 
-        model_MLE = estimate_MLE(data, fix_systematics=fix_systematics)
+        model_MLE = estimate_MLE(data, fix_systematics=fix_systematics, param_type=param_type)
         print("Estimated MLE parameters:", model_MLE)
 
         para_range = np.linspace(0, range_max, range_points, dtype=DEFAULT_FLOAT_TYPE)
         bin_width = para_range[1] - para_range[0]
-        min_val = np.min([model_MLE["r_Ge77m"],0.001* bin_width])
+        # Use appropriate parameter for minimum value calculation
+        if param_type == "r_Ge77m":
+                min_val = np.min([model_MLE["r_Ge77m"], 0.01 * bin_width])
+        else:
+                min_val = np.min([model_MLE["r_Ge77_and_Ge77m"], 0.01 * bin_width])
         para_range[para_range<min_val] = min_val  # Avoid numerical issues with very small values
 
-        model_range = ak.Array([generate_model(model_MLE,x) for x in para_range])
+        model_range = ak.Array([generate_model(model_MLE, x, param_type) for x in para_range])
 
         print("Generating toy data...")
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
                 # Prepare arguments for parallel processing
-                args_list = [(model_range[i], sample_size, fix_systematics) for i in range(len(model_range))]
+                args_list = [(model_range[i], sample_size, fix_systematics, param_type) for i in range(len(model_range))]
                 
                 # Use list comprehension with executor.map for parallel processing
                 toy_range = list(tqdm(executor.map(generate_toy_mcs_batch, args_list), 
@@ -387,24 +531,30 @@ def calculate_mle_and_ci(
         print("Computing NLL range using multithreading...")
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
                 # Prepare arguments for parallel processing
-                args_list = [(toy_range[i], model_range[i], fix_systematics) for i in range(len(toy_range))]
+                args_list = [(toy_range[i], model_range[i], fix_systematics, param_type) for i in range(len(toy_range))]
                 
                 # Use list comprehension with executor.map for parallel processing
                 nll_range = list(tqdm(executor.map(compute_nll_for_toy_batch, args_list), 
                                     total=len(args_list), desc="NLL calculations"))
         
         nll_range = np.array(nll_range)
-        data_nll = np.array([nllr(data, model_range[i], verbose=False, fix_systematics=fix_systematics) for i in range(len(toy_range))])
+        data_nll = np.array([nllr(data, model_range[i], verbose=False, fix_systematics=fix_systematics, param_type=param_type) for i in range(len(toy_range))])
         p_value_range = np.array([np.count_nonzero(nll_range[i] >= data_nll[i])/len(nll_range[i]) for i in range(len(toy_range))])
 
         model_H0 = model_MLE.copy()
-        model_H0["r_Ge77m"] = 0
+        # Set null hypothesis: primary parameter = 0
+        if param_type == "r_Ge77m":
+                model_H0["r_Ge77m"] = 0
+                model_H0["r_Ge77_and_Ge77m"] = 0
+        else:  # param_type == "r_Ge77_and_Ge77m"
+                model_H0["r_Ge77_and_Ge77m"] = 0
+                model_H0["r_Ge77m"] = 0
 
-        toy_H0 = generate_toy_data(model_H0, sample_size=sample_size, fix_systematics=fix_systematics)
+        toy_H0 = generate_toy_data(model_H0, sample_size=sample_size, fix_systematics=fix_systematics, param_type=param_type)
 
         print("Computing NLL H0 range using multithreading...")
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
-                args_list = [(toy_H0, model_range[i], fix_systematics) for i in range(len(toy_range))]
+                args_list = [(toy_H0, model_range[i], fix_systematics, param_type) for i in range(len(toy_range))]
                 nll_H0_range = list(tqdm(executor.map(compute_nll_h0_for_model, args_list), 
                                        total=len(args_list), desc="NLL H0 calculations"))
         
@@ -424,43 +574,13 @@ def calculate_mle_and_ci(
         bound_90_lower = np.array([np.sort(p_val_H0_entry)[int(len(p_val_H0_entry)*(0.10/2.))] for p_val_H0_entry in p_val_H0])
         bound_90_higher = np.array([np.sort(p_val_H0_entry)[int(len(p_val_H0_entry)*(1 - 0.10/2.))] for p_val_H0_entry in p_val_H0])
 
-        import json
-        
-        # Convert all output values to JSON-serializable format (float64)
-        output = ensure_precision_dict({
-                "MLE": model_MLE,
-                "para": list(para_range),
-                "obs":  list(p_value_range),
-                "exp":  list(median_H0),
-                "m_exp": list(bound_68_lower),
-                "p_exp": list(bound_68_higher),
-                "m_exp_90": list(bound_90_lower),
-                "p_exp_90": list(bound_90_higher)
-        }, dtype=STORAGE_FLOAT_TYPE)  # Ensure float64 for JSON compatibility
-        
-        # Use high precision when writing to JSON
-        class HighPrecisionEncoder(json.JSONEncoder):
-            def encode(self, obj):
-                if isinstance(obj, np.floating):
-                    return format(float(obj), '.17g')  # Convert to Python float first
-                return super().encode(obj)
-                
-            def default(self, obj):
-                if isinstance(obj, np.floating):
-                    return float(obj)  # Convert numpy floats to Python floats
-                elif isinstance(obj, np.integer):
-                    return int(obj)    # Convert numpy ints to Python ints
-                elif isinstance(obj, np.ndarray):
-                    return obj.tolist()  # Convert arrays to lists
-                return super().default(obj)
-        
-        with open(output_path,"w") as f:
-                json.dump(output, f, indent=4, cls=HighPrecisionEncoder)
-
-        
-        # write nll_range, data_nll and nll_H0 to lh5 file
         import os
-        lh5_path = output_path.replace(".json", ".lh5")
+        
+        # Determine output path - if it ends with .json, replace with .lh5, otherwise assume it's already .lh5
+        if output_path.endswith('.json'):
+                lh5_path = output_path.replace(".json", ".lh5")
+        else:
+                lh5_path = output_path
         
         # Remove existing file to avoid shape conflicts
         if os.path.exists(lh5_path):
@@ -472,20 +592,56 @@ def calculate_mle_and_ci(
         nll_H0_range = np.array(nll_H0_range, dtype=STORAGE_FLOAT_TYPE)
         para_range = np.array(para_range, dtype=STORAGE_FLOAT_TYPE)
         
+        # Convert p-value arrays to consistent dtypes
+        p_value_range = np.array(p_value_range, dtype=STORAGE_FLOAT_TYPE)
+        median_H0 = np.array(median_H0, dtype=STORAGE_FLOAT_TYPE)
+        bound_68_lower = np.array(bound_68_lower, dtype=STORAGE_FLOAT_TYPE)
+        bound_68_higher = np.array(bound_68_higher, dtype=STORAGE_FLOAT_TYPE)
+        bound_90_lower = np.array(bound_90_lower, dtype=STORAGE_FLOAT_TYPE)
+        bound_90_higher = np.array(bound_90_higher, dtype=STORAGE_FLOAT_TYPE)
+        
+        # Create comprehensive LH5 output with all requested keys
         output_lh5 = {
-                "nll_range": types.Array(nll_range),
+                # MLE parameters - flatten the nested MLE dictionary
+                "MLE_eps_sel": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["eps_sel"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_exp": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["exp"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_r_Ge77_and_Ge77m": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["r_Ge77_and_Ge77m"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_r_Ge77m": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["r_Ge77m"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_r_b": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["r_b"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_ratio": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["ratio"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_total_rate_scaling": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["scaling_factor"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_unc_sel": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["unc_sel"])], dtype=STORAGE_FLOAT_TYPE)),
+                "MLE_unc_total_rate_scaling": types.Array(np.array([STORAGE_FLOAT_TYPE(model_MLE["unc_scaling"])], dtype=STORAGE_FLOAT_TYPE)),
+                
+                # NLL data
                 "data_nll": types.Array(data_nll),
                 "nll_H0_range": types.Array(nll_H0_range),
+                "nll_range": types.Array(nll_range),
+                
+                # P-value data
+                "p_value_exp": types.Array(median_H0),
+                "p_value_m_exp": types.Array(bound_68_lower),
+                "p_value_m_exp_90": types.Array(bound_90_lower),
+                "p_value_obs": types.Array(p_value_range),
+                "p_value_p_exp": types.Array(bound_68_higher),
+                "p_value_p_exp_90": types.Array(bound_90_higher),
+                
+                # Parameter range
                 "para_range": types.Array(para_range)
         }
         
         print("LH5 output shapes:")
+        print(f"MLE_eps_sel: {output_lh5['MLE_eps_sel'].nda.shape}")
+        print(f"MLE_r_Ge77m: {output_lh5['MLE_r_Ge77m'].nda.shape}")
+        print(f"MLE_r_Ge77_and_Ge77m: {output_lh5['MLE_r_Ge77_and_Ge77m'].nda.shape}")
         print(f"nll_range: {nll_range.shape}")
         print(f"data_nll: {data_nll.shape}")  
         print(f"nll_H0_range: {nll_H0_range.shape}")
         print(f"para_range: {para_range.shape}")
+        print(f"p_value_obs: {p_value_range.shape}")
+        print(f"p_value_exp: {median_H0.shape}")
 
-        lh5.write(types.Struct(output_lh5), name="nll", lh5_file=lh5_path)
+        lh5.write(types.Struct(output_lh5), name="freq_calc_results", lh5_file=lh5_path)
 
 
 def ensure_precision_dict(data_dict, dtype=STORAGE_FLOAT_TYPE):
@@ -523,23 +679,33 @@ def to_dict(obj):
     if hasattr(obj, 'items'):
         # It's already a dictionary
         for key, value in obj.items():
-            result[key] = DEFAULT_FLOAT_TYPE(value)
+                if isinstance(value, (int, float, np.number)):
+                        result[key] = DEFAULT_FLOAT_TYPE(value)
+                else:
+                        result[key] = value
     elif hasattr(obj, 'fields'):
         # It's an awkward array
         for field in obj.fields:
-            result[field] = DEFAULT_FLOAT_TYPE(obj[field])
+                if isinstance(obj[field], (int, float, np.number)):
+                        result[field] = DEFAULT_FLOAT_TYPE(obj[field])
+                else:
+                        result[field] = obj[field]
+
     else:
         # Try to iterate over it as if it's a mapping
         try:
             for key in obj:
-                result[key] = DEFAULT_FLOAT_TYPE(obj[key])
+                if isinstance(obj[key], (int, float, np.number)):
+                        result[key] = DEFAULT_FLOAT_TYPE(obj[key])
+                else:
+                        result[key] = obj[key]
         except:
             raise ValueError(f"Cannot convert object of type {type(obj)} to dictionary")
     return result
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculate MLE and confidence intervals for a given dataset.")
-    parser.add_argument("output_path", type=str, help="Path to the output file where results will be saved.")
+    parser.add_argument("output_path", type=str, help="Path to the output fi    le where results will be saved.")
     parser.add_argument("rc_rates_path", type=str, help="Path to the YAML file containing RC rates.")
     parser.add_argument("sel_eff_path", type=str, help="Path to the YAML file containing selection efficiency.")
     parser.add_argument("selected_candidates_path", type=str, help="Path to the LH5 file containing selected candidates.")
@@ -549,6 +715,9 @@ if __name__ == "__main__":
     parser.add_argument("--range_max", type=float, default=2.0, help="Maximum range for the parameter (default: 2.0).")
     parser.add_argument("--range_points", type=int, default=40, help="Number of points in the parameter range (default: 40).")
     parser.add_argument("--fix_systematics", action="store_true", help="Fix systematic uncertainties (nuisance parameters) to their nominal values.")
+    parser.add_argument("--param_type", type=str, default="r_Ge77m", choices=["r_Ge77m", "r_Ge77_and_Ge77m"], help="Parameter to optimize: 'r_Ge77m' or 'r_Ge77_and_Ge77m' (default: r_Ge77m).")
+    parser.add_argument("--scaling_factor", type=float, default=0.5, help="Central value of scaling factor relating r_Ge77m and r_Ge77_and_Ge77m (default: 0.5).")
+    parser.add_argument("--unc_scaling", type=float, default=0.1, help="Uncertainty on scaling factor (default: 0.1).")
 
     args = parser.parse_args()
 
@@ -561,6 +730,8 @@ if __name__ == "__main__":
     print(f"Number of Threads: {args.n_threads}")
     print(f"Sample Size: {args.sample_size}")
     print(f"Fix Systematics: {args.fix_systematics}")
+    print(f"Parameter Type: {args.param_type}")
+    print(f"Scaling Factor: {args.scaling_factor} ± {args.unc_scaling}")
 
     calculate_mle_and_ci(
         args.output_path,
@@ -572,5 +743,8 @@ if __name__ == "__main__":
         sample_size=args.sample_size,
         range_max=args.range_max,
         range_points=args.range_points,
-        fix_systematics=args.fix_systematics
+        fix_systematics=args.fix_systematics,
+        param_type=args.param_type,
+        scaling_factor=args.scaling_factor,
+        unc_scaling=args.unc_scaling
     )

@@ -89,11 +89,22 @@ def calculate_selection_eff(
         key: ak.sum(masks["energy"] & combined_masks[key]) for key in combined_masks
     }
 
-    eps_delayed = {
-        key: float(n_ge77_selected[key] / n_ge77) for key in n_ge77_selected
+    eps_delayed_energs = {
+        "val": float(n_ge77_selected["all"] / n_ge77) if n_ge77 > 0 else 0,
+        "unc": float(np.sqrt(n_ge77_selected["all"] / n_ge77**2 + n_ge77_selected["all"]**2 / n_ge77**3) if n_ge77_selected["all"] > 0 else 0)
     }
-    unc_delayed = {
-        key: float(eps_delayed[key] * np.sqrt(1 / n_ge77_selected[key] + 1 / n_ge77 * eps_delayed[key])) if n_ge77_selected[key] > 0 else 0 
+    eps_delayed_analysis_cuts = {
+        key: float(n_ge77_selected[key] / n_ge77_selected["all"]) for key in n_ge77_selected
+    }
+
+    additional_unc = {
+        "all": 0,
+        "mult": 0,
+        "mult_lar": 0.05,
+        "mult_lar_psd": 0.07
+    }
+    unc_delayed_analysis_cuts = {
+        key: float(np.sqrt(n_ge77_selected[key]/n_ge77_selected["all"]**2 + n_ge77_selected["all"]**2/n_ge77_selected["all"]**3 + additional_unc[key]**2) if n_ge77_selected[key] > 0 else 0)
         for key in n_ge77_selected
     }
 
@@ -139,11 +150,12 @@ def calculate_selection_eff(
             }
         },
         "eps_delayed": {
+            "energy": eps_delayed_energs,
             "selection": {
                 key: {
-                    "val": eps_delayed[key],
-                    "unc": unc_delayed[key]
-                } for key in eps_delayed.keys()
+                    "val": eps_delayed_analysis_cuts[key],
+                    "unc": unc_delayed_analysis_cuts[key]
+                } for key in eps_delayed_analysis_cuts.keys()
             },
             "scan": scans
         },

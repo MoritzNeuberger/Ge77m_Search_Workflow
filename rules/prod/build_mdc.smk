@@ -26,7 +26,7 @@ rule delayed_coinc:
             base=wc["base"].replace("tier_mdc", "tier_pht")
         )),
         barrier="/tmp/mgc_all.done",
-        waveform_block="/tmp/mgc_plots_all.done"
+        #waveform_block="/tmp/mgc_plots_all.done"
     output:
         os.path.join(
             config["out_root"],
